@@ -55,11 +55,85 @@ Preview the production bundle locally with:
 npm run preview
 ```
 
+## Testing
+
+Run all checks before deployment:
+
+```bash
+npm run validate          # Runs lint + type-check + tests
+npm run test:coverage    # Generate coverage report
+```
+
+See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for testing standards and coverage requirements.
+
 ## Deploying to Vercel
 
-Set these environment variables in the Vercel dashboard:
+### Prerequisites
 
-- `VITE_SUPABASE_URL` - from Supabase project Settings > API
-- `VITE_SUPABASE_ANON_KEY` - from Supabase project Settings > API
+1. **Supabase Database Setup**
+   - Apply migration: `supabase/migrations/004_fix_bookings_and_profiles_CONSOLIDATED.sql`
+   - Verify schema with queries in [DEPLOYMENT_RUNBOOK.md](./DEPLOYMENT_RUNBOOK.md)
 
-The `VITE_` prefix is required so Vite exposes the values to the browser bundle.
+2. **Environment Variables**
+   Set these in the Vercel dashboard:
+   - `VITE_SUPABASE_URL` - from Supabase project Settings > API
+   - `VITE_SUPABASE_ANON_KEY` - from Supabase project Settings > API
+
+3. **Pre-Deployment Checklist**
+   ```bash
+   npm run validate     # Must pass with 0 errors
+   npm run build        # Must succeed
+   npm run test         # All tests must pass
+   ```
+
+### Deploy
+
+Push to main branch (auto-deploys) or run:
+```bash
+vercel --prod
+```
+
+### Verification
+
+See [DEPLOYMENT_RUNBOOK.md](./DEPLOYMENT_RUNBOOK.md) for complete 70-step deployment and verification procedures.
+
+## Documentation
+
+After solving critical gaps, comprehensive documentation is available:
+
+| Document | Purpose |
+|----------|---------|
+| [QUICK_START.md](./QUICK_START.md) | Step-by-step commands and checklist |
+| [DEPLOYMENT_RUNBOOK.md](./DEPLOYMENT_RUNBOOK.md) | Complete 70-step deployment guide with rollback procedures |
+| [TESTING_GUIDE.md](./TESTING_GUIDE.md) | Testing standards, coverage requirements, and how to write tests |
+| [PERFORMANCE_MONITORING.md](./PERFORMANCE_MONITORING.md) | Performance targets, monitoring setup, and alert thresholds |
+| [CRITICAL_GAPS_FIXED.md](./CRITICAL_GAPS_FIXED.md) | Summary of all critical gaps that were addressed |
+| [SUPABASE_FIXES_QUICK_REF.md](./SUPABASE_FIXES_QUICK_REF.md) | Quick reference for Supabase schema fixes |
+| [EXECUTIVE_SUMMARY.md](./EXECUTIVE_SUMMARY.md) | Project analysis summary |
+
+## Development Scripts
+
+```bash
+npm run dev               # Start dev server
+npm run build            # Production build
+npm run preview          # Preview production build
+npm run lint             # Check code quality
+npm run type-check       # Check TypeScript types
+npm run test             # Run tests
+npm run test:coverage    # Generate coverage report
+npm run test:ui          # Run tests with UI
+npm run validate         # All checks (lint + types + tests)
+npm run format           # Format code with Prettier
+npm run lint:fix         # Auto-fix linting issues
+```
+
+## Status
+
+✅ **Production Ready** - All critical gaps addressed
+- Error handling & loading states implemented
+- Comprehensive testing framework in place
+- Complete deployment procedures documented
+- Performance monitoring guidelines provided
+- Security verification checklist completed
+
+See [CRITICAL_GAPS_FIXED.md](./CRITICAL_GAPS_FIXED.md) for details on what was fixed.
