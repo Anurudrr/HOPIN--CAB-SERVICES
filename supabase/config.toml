@@ -1,0 +1,13 @@
+project_id = "tmgcmoghpctzzscjcevz"
+
+[functions.admin-review-driver-application]
+verify_jwt = true
+
+[functions.submit-contact-message]
+verify_jwt = false
+
+[functions.subscribe-to-journal]
+verify_jwt = false
+
+[functions.expire-rides]
+verify_jwt = false

@@ -30,6 +30,22 @@ const rideSelect = `
   vehicle:vehicles!vehicles_driver_id_fkey(make,model,color,license_plate)
 `
 
+async function invokeBackendFunction<TResponse>(
+  name: string,
+  body?: Record<string, unknown>,
+): Promise<TResponse> {
+  const { data, error } = await withRetry(() =>
+    supabase.functions.invoke<TResponse>(name, body ? { body } : {})
+  )
+
+  if (error) {
+    logDevError(`functions.${name}`, error)
+    throw new Error(mapApiErrorMessage(error, name))
+  }
+
+  return data as TResponse
+}
+
 /**
  * Get available rides for a specific city
  */
@@ -200,12 +216,14 @@ export async function submitContactMessage(input: ContactMessageInput): Promise<
   }
 
   try {
-    const { error } = await supabase.from('contact_messages').insert(payload)
-
-    if (error) {
-      logDevError('submitContactMessage', error)
-      throw new Error(mapApiErrorMessage(error, 'submitting contact message'))
-    }
+    await invokeBackendFunction('submit-contact-message', {
+      name: payload.name,
+      email: payload.email,
+      topic: payload.topic,
+      message: payload.message,
+      requestedRole: payload.requested_role,
+      requestedCity: payload.requested_city,
+    })
   } catch (error) {
     logDevError('submitContactMessage', error)
     throw error
@@ -219,22 +237,9 @@ export async function subscribeToJournal(email: string): Promise<{ email: string
   const normalizedEmail = email.trim().toLowerCase()
 
   try {
-    const { data, error } = await supabase
-      .from('newsletter_subscriptions')
-      .insert({ email: normalizedEmail })
-      .select('email')
-      .single()
-
-    if (error) {
-      if ('code' in error && error.code === '23505') {
-        return { email: normalizedEmail }
-      }
-
-      logDevError('subscribeToJournal', error)
-      throw new Error(mapApiErrorMessage(error, 'subscribing to newsletter'))
-    }
-
-    return data as { email: string }
+    return await invokeBackendFunction<{ email: string }>('subscribe-to-journal', {
+      email: normalizedEmail,
+    })
   } catch (error) {
     logDevError('subscribeToJournal', error)
     throw error
@@ -589,31 +594,16 @@ export async function reviewDriverApplication(
   reviewNotes?: string,
 ): Promise<DriverApplication> {
   try {
-    const { data: reviewedId, error } = await withRetry(() =>
-      supabase.rpc('review_driver_application', {
-        p_application_id: applicationId,
-        p_status: status,
-        p_review_notes: reviewNotes?.trim() || null,
-      })
+    const result = await invokeBackendFunction<{ application: DriverApplication }>(
+      'admin-review-driver-application',
+      {
+        applicationId,
+        status,
+        reviewNotes: reviewNotes?.trim() || null,
+      }
     )
 
-    if (error) {
-      logDevError('reviewDriverApplication', error)
-      throw new Error(mapApiErrorMessage(error, 'reviewing driver application'))
-    }
-
-    const { data, error: applicationError } = await supabase
-      .from('driver_applications')
-      .select('*')
-      .eq('id', (reviewedId as string) || applicationId)
-      .single()
-
-    if (applicationError) {
-      logDevError('reviewDriverApplication.fetch', applicationError)
-      throw new Error(mapApiErrorMessage(applicationError, 'loading reviewed application'))
-    }
-
-    return data as DriverApplication
+    return result.application
   } catch (error) {
     logDevError('reviewDriverApplication', error)
     throw error

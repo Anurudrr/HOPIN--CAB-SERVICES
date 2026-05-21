@@ -19,14 +19,6 @@ export const env = {
     'VITE_SUPABASE_ANON_KEY',
     import.meta.env.VITE_SUPABASE_ANON_KEY
   ),
-  SERVICE_ROLE_KEY: import.meta.env.SUPABASE_SERVICE_ROLE_KEY,
 } as const;
-
-// Validate at module load time
-Object.entries(env).forEach(([key, value]) => {
-  if (key !== 'SERVICE_ROLE_KEY' && !value) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-});
 
 export default env;

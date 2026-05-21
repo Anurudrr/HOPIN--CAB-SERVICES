@@ -8,6 +8,14 @@
 -- PHASE 1: CRITICAL FUNCTIONS (2.5 hours)
 -- ============================================================================
 
+-- Ensure lifecycle update columns exist before the functions below reference
+-- them. Earlier schema versions did not define these columns on rides/bookings.
+ALTER TABLE public.rides
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
 -- 1. validate_ride_availability - Check if ride can be booked
 CREATE OR REPLACE FUNCTION validate_ride_availability(
   p_ride_id uuid

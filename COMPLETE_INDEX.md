@@ -137,7 +137,7 @@
 4. [BEFORE_AFTER_COMPARISON.md](./BEFORE_AFTER_COMPARISON.md) - SQL changes
 
 **Key sections**:
-- Migration 004 application
+- Supabase migration chain application
 - Schema verification queries
 - RLS policy checks
 
@@ -292,7 +292,7 @@ Sleep well at night ✨
 - [ ] npm run build succeeds
 - [ ] npm run test passes
 - [ ] Coverage ≥ 65%
-- [ ] Supabase migration 004 applied
+- [ ] Supabase migration chain applied through `011_backend_runtime_consolidation.sql`
 - [ ] Vercel env vars set
 
 ✅ **At Deployment**:

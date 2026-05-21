@@ -1,6 +1,6 @@
 # HopIn
 
-HopIn is a shared urban mobility web app for Indian cities. The frontend is built with React 19, Vite, TypeScript, Zustand, Motion for React, React Leaflet, and Tailwind CSS v4. Production data and authentication run directly on Supabase, so the app can deploy cleanly on Vercel without a persistent Node server.
+HopIn is a shared urban mobility web app for Indian cities. The frontend is built with React 19, Vite, TypeScript, Zustand, Motion for React, React Leaflet, and Tailwind CSS v4. The backend runs on Supabase Postgres, RLS policies, RPCs, and Edge Functions, so the app can deploy cleanly on Vercel without a separate long-lived Node API service.
 
 ## Tech Stack
 
@@ -9,7 +9,7 @@ HopIn is a shared urban mobility web app for Indian cities. The frontend is buil
 - Zustand
 - Motion for React
 - React Leaflet
-- Supabase Auth + Postgres
+- Supabase Auth + Postgres + Edge Functions
 
 ## Local Development
 
@@ -38,10 +38,11 @@ The app runs on `http://localhost:3000`.
 The repo includes SQL migrations in `supabase/migrations` for:
 
 - Core HopIn tables and RLS policies
-- The `book_ride` booking RPC
-- The `cancel_booking` booking-cancellation RPC
+- Ride and booking lifecycle RPCs
+- Admin review and operations policies
+- Backend runtime hardening, audit logs, and scheduled expiry support
 
-Apply those migrations in your Supabase project before using the production flows.
+Apply the full migration chain through `011_backend_runtime_consolidation.sql` before using the production flows. The new server-side function entrypoints live in `supabase/functions`.
 
 ## Build
 
@@ -71,13 +72,18 @@ See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for testing standards and coverage re
 ### Prerequisites
 
 1. **Supabase Database Setup**
-   - Apply migration: `supabase/migrations/004_fix_bookings_and_profiles_CONSOLIDATED.sql`
-   - Verify schema with queries in [DEPLOYMENT_RUNBOOK.md](./DEPLOYMENT_RUNBOOK.md)
+   - Apply the full `supabase/migrations` chain, including `011_backend_runtime_consolidation.sql`
+   - Deploy the Edge Functions in `supabase/functions`
+   - Verify schema and runtime setup with [docs/BACKEND_ARCHITECTURE.md](./docs/BACKEND_ARCHITECTURE.md)
 
 2. **Environment Variables**
    Set these in the Vercel dashboard:
    - `VITE_SUPABASE_URL` - from Supabase project Settings > API
    - `VITE_SUPABASE_ANON_KEY` - from Supabase project Settings > API
+
+   Set these in Supabase Edge Functions:
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `BACKEND_CRON_SECRET`
 
 3. **Pre-Deployment Checklist**
    ```bash
@@ -104,6 +110,7 @@ After solving critical gaps, comprehensive documentation is available:
 | Document | Purpose |
 |----------|---------|
 | [QUICK_START.md](./QUICK_START.md) | Step-by-step commands and checklist |
+| [docs/BACKEND_ARCHITECTURE.md](./docs/BACKEND_ARCHITECTURE.md) | Current backend architecture, migrations, and function deployment |
 | [DEPLOYMENT_RUNBOOK.md](./DEPLOYMENT_RUNBOOK.md) | Complete 70-step deployment guide with rollback procedures |
 | [TESTING_GUIDE.md](./TESTING_GUIDE.md) | Testing standards, coverage requirements, and how to write tests |
 | [PERFORMANCE_MONITORING.md](./PERFORMANCE_MONITORING.md) | Performance targets, monitoring setup, and alert thresholds |

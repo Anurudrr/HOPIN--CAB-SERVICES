@@ -166,6 +166,9 @@ export const mockSupabaseClient = {
     })),
   },
   from: vi.fn(),
+  functions: {
+    invoke: vi.fn(),
+  },
   rpc: vi.fn(),
   storage: {
     from: vi.fn(() => ({
@@ -188,6 +191,7 @@ export function resetMockSupabase() {
   mockSupabaseClient.auth.signUp.mockResolvedValue({ error: null });
   mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({ error: null });
   mockSupabaseClient.auth.signOut.mockResolvedValue({ error: null });
+  mockSupabaseClient.functions.invoke.mockResolvedValue({ data: null, error: null });
   mockSupabaseClient.rpc.mockResolvedValue({ data: null, error: null });
   mockSupabaseClient.from.mockImplementation(() => createQueryBuilder({ data: null, error: null }));
   mockSupabaseClient.storage.from.mockImplementation(() => ({

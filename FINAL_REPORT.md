@@ -222,7 +222,7 @@ cat DEPLOYMENT_RUNBOOK.md | head -100
 ### THIS WEEK (30 minutes per day)
 - [ ] Read DEPLOYMENT_RUNBOOK.md completely
 - [ ] Follow all 70 steps systematically
-- [ ] Apply Supabase migration 004
+- [ ] Apply the Supabase migration chain through `011_backend_runtime_consolidation.sql`
 - [ ] Set Vercel environment variables
 - [ ] Deploy to production
 - [ ] Monitor for 24+ hours

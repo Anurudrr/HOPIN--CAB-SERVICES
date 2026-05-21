@@ -26,6 +26,7 @@ import {
   getSupportInbox,
   reviewDriverApplication,
   startDriverRide,
+  subscribeToJournal,
   submitContactMessage,
 } from "./api";
 
@@ -158,11 +159,10 @@ describe("api", () => {
   });
 
   it("submits a trimmed contact message payload", async () => {
-    const builder = createQueryBuilder({
+    mockSupabaseClient.functions.invoke.mockResolvedValueOnce({
       data: null,
       error: null,
     });
-    mockSupabaseClient.from.mockReturnValueOnce(builder);
 
     await expect(
       submitContactMessage({
@@ -175,13 +175,15 @@ describe("api", () => {
       }),
     ).resolves.toBeUndefined();
 
-    expect(builder.insert).toHaveBeenCalledWith({
-      name: "Aarav",
-      email: "rider@example.com",
-      topic: "Support",
-      message: "Need help with a booking",
-      requested_role: "driver",
-      requested_city: "Bangalore",
+    expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledWith("submit-contact-message", {
+      body: {
+        name: "Aarav",
+        email: "rider@example.com",
+        topic: "Support",
+        message: "Need help with a booking",
+        requestedRole: "driver",
+        requestedCity: "Bangalore",
+      },
     });
   });
 
@@ -283,24 +285,41 @@ describe("api", () => {
       created_at: "2026-05-20T10:00:00.000Z",
     };
 
-    mockSupabaseClient.rpc.mockResolvedValueOnce({
-      data: reviewedApplication.id,
+    mockSupabaseClient.functions.invoke.mockResolvedValueOnce({
+      data: {
+        application: reviewedApplication,
+      },
       error: null,
     });
-    mockSupabaseClient.from.mockReturnValueOnce(
-      createQueryBuilder({
-        data: reviewedApplication,
-        error: null,
-      }),
-    );
 
     await expect(
       reviewDriverApplication(reviewedApplication.id, "approved", "Documents verified"),
     ).resolves.toEqual(reviewedApplication);
-    expect(mockSupabaseClient.rpc).toHaveBeenCalledWith("review_driver_application", {
-      p_application_id: reviewedApplication.id,
-      p_status: "approved",
-      p_review_notes: "Documents verified",
+    expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledWith(
+      "admin-review-driver-application",
+      {
+        body: {
+          applicationId: reviewedApplication.id,
+          status: "approved",
+          reviewNotes: "Documents verified",
+        },
+      },
+    );
+  });
+
+  it("subscribes through the backend function layer", async () => {
+    mockSupabaseClient.functions.invoke.mockResolvedValueOnce({
+      data: { email: "rider@example.com" },
+      error: null,
+    });
+
+    await expect(subscribeToJournal(" Rider@Example.com ")).resolves.toEqual({
+      email: "rider@example.com",
+    });
+    expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledWith("subscribe-to-journal", {
+      body: {
+        email: "rider@example.com",
+      },
     });
   });
 });

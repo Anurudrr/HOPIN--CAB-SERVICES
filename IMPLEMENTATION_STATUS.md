@@ -372,7 +372,7 @@ After: Targets defined, monitoring options documented, baseline collection instr
 4. [ ] Run `npm run build` to verify production build
 
 ### This Week
-1. [ ] Apply Supabase migration 004
+1. [ ] Apply the Supabase migration chain through `011_backend_runtime_consolidation.sql`
 2. [ ] Complete all 8 deployment phases
 3. [ ] Set up monitoring (Sentry or Vercel Analytics)
 4. [ ] Deploy to Vercel

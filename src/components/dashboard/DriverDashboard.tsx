@@ -212,8 +212,8 @@ export const DriverDashboard = () => {
             Publish corridor rides from your {profile?.city || "assigned"} network.
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-white">
-            Your application, vehicle record, and future ride inventory now come directly from
-            Supabase instead of the old Node dispatch layer.
+            Your application, vehicle record, and ride operations now flow through the
+            Supabase backend and its server-side function layer.
           </p>
         </div>
         <ButtonLink to="/driver-signup" variant="outline">

@@ -12,11 +12,35 @@ export interface NetworkStatus {
   downlink?: number;
 }
 
+interface NetworkConnection {
+  effectiveType?: string;
+  downlink?: number;
+  addEventListener: (type: "change", listener: () => void) => void;
+  removeEventListener: (type: "change", listener: () => void) => void;
+}
+
+type NavigatorWithConnection = Navigator & {
+  connection?: NetworkConnection;
+  mozConnection?: NetworkConnection;
+  webkitConnection?: NetworkConnection;
+};
+
 const initialStatus: NetworkStatus = {
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
   isSlowConnection: false,
   type: 'unknown',
 };
+
+function getNetworkConnection(): NetworkConnection | undefined {
+  if (typeof navigator === "undefined") return undefined;
+
+  const browserNavigator = navigator as NavigatorWithConnection;
+  return (
+    browserNavigator.connection ??
+    browserNavigator.mozConnection ??
+    browserNavigator.webkitConnection
+  );
+}
 
 /**
  * Monitor network connectivity and connection quality
@@ -53,10 +77,7 @@ export function useNetworkStatus(): NetworkStatus {
     };
 
     const handleConnectionChange = () => {
-      const connection =
-        (navigator as any).connection ||
-        (navigator as any).mozConnection ||
-        (navigator as any).webkitConnection;
+      const connection = getNetworkConnection();
 
       if (connection) {
         const effectiveType = connection.effectiveType;
@@ -77,10 +98,7 @@ export function useNetworkStatus(): NetworkStatus {
     window.addEventListener('offline', handleOffline);
 
     // Listen for connection changes
-    const connection =
-      (navigator as any).connection ||
-      (navigator as any).mozConnection ||
-      (navigator as any).webkitConnection;
+    const connection = getNetworkConnection();
 
     if (connection) {
       connection.addEventListener('change', handleConnectionChange);
