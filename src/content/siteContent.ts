@@ -1,19 +1,14 @@
+import { supportedCities, type SupportedCity } from "../lib/cities";
+
+export { supportedCities };
+export type { SupportedCity };
+
 export const navItems = [
   { label: "Network", to: "/#network" },
   { label: "Safety", to: "/safety" },
   { label: "Cities", to: "/cities" },
   { label: "Manifesto", to: "/about" },
 ];
-
-export const supportedCities = [
-  "Mumbai",
-  "Delhi",
-  "Bangalore",
-  "Hyderabad",
-  "Pune",
-] as const;
-
-export type SupportedCity = (typeof supportedCities)[number];
 
 export interface BookingLocation {
   address: string;

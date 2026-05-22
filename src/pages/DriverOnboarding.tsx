@@ -7,10 +7,21 @@ import { toast } from "sonner";
 import { Button, ButtonLink } from "../components/ui/Button";
 import { submitDriverApplication } from "../lib/api";
 import { getErrorMessage, logDevError } from "../lib/errors";
+import {
+  driverApplicationSchema,
+  MAX_DRIVER_CAPACITY,
+  MAX_DRIVER_VEHICLE_YEAR,
+  MIN_DRIVER_CAPACITY,
+  MIN_DRIVER_VEHICLE_YEAR,
+} from "../lib/validation";
 import { useAuthStore } from "../store/useAuthStore";
 
 const MAX_DOCUMENT_SIZE_BYTES = 5 * 1024 * 1024;
 const allowedDocumentTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
+
+function getValidationErrorMessage(error: string[] | undefined, fallback: string) {
+  return error?.[0] || fallback;
+}
 
 export default function DriverOnboarding() {
   const navigate = useNavigate();
@@ -43,16 +54,25 @@ export default function DriverOnboarding() {
       return;
     }
 
-    if (
-      !formData.licenseNumber.trim() ||
-      !formData.licenseExpiry ||
-      !formData.make.trim() ||
-      !formData.model.trim() ||
-      !formData.year.trim() ||
-      !formData.color.trim() ||
-      !formData.plate.trim()
-    ) {
-      setError("Complete the license and vehicle fields before submitting.");
+    const parsedInput = driverApplicationSchema.safeParse({
+      licenseNumber: formData.licenseNumber.trim(),
+      licenseExpiry: formData.licenseExpiry,
+      documentUrl: formData.documentUrl.trim() || undefined,
+      make: formData.make.trim(),
+      model: formData.model.trim(),
+      year: Number(formData.year),
+      color: formData.color.trim(),
+      capacity: Number(formData.capacity),
+      plate: formData.plate.trim().toUpperCase(),
+    });
+
+    if (!parsedInput.success) {
+      setError(
+        getValidationErrorMessage(
+          parsedInput.error.flatten().formErrors,
+          parsedInput.error.errors[0]?.message || "Complete the driver application fields before submitting.",
+        ),
+      );
       return;
     }
 
@@ -61,15 +81,8 @@ export default function DriverOnboarding() {
 
     try {
       await submitDriverApplication({
-        licenseNumber: formData.licenseNumber.trim(),
-        licenseExpiry: formData.licenseExpiry,
-        documentUrl: formData.documentUrl.trim(),
-        make: formData.make.trim(),
-        model: formData.model.trim(),
-        year: Number(formData.year),
-        color: formData.color.trim(),
-        capacity: Number(formData.capacity) || 4,
-        plate: formData.plate.trim().toUpperCase(),
+        ...parsedInput.data,
+        documentUrl: parsedInput.data.documentUrl || "",
       });
       await fetchProfile();
       toast.success("Application submitted!");
@@ -306,8 +319,8 @@ export default function DriverOnboarding() {
                 <input
                   id="vehicle-year"
                   type="number"
-                  min={2000}
-                  max={2100}
+                  min={MIN_DRIVER_VEHICLE_YEAR}
+                  max={MAX_DRIVER_VEHICLE_YEAR}
                   value={formData.year}
                   onChange={(event) => {
                     setError(null);
@@ -342,8 +355,8 @@ export default function DriverOnboarding() {
                 <input
                   id="vehicle-capacity"
                   type="number"
-                  min={1}
-                  max={8}
+                  min={MIN_DRIVER_CAPACITY}
+                  max={MAX_DRIVER_CAPACITY}
                   value={formData.capacity}
                   onChange={(event) => {
                     setError(null);

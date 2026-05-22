@@ -623,9 +623,7 @@ DECLARE
   v_expired_ids uuid[] := '{}'::uuid[];
   v_expired_count integer := 0;
 BEGIN
-  SELECT COALESCE(array_agg(expired.id), '{}'::uuid[])
-  INTO v_expired_ids
-  FROM (
+  WITH expired AS (
     UPDATE public.rides
     SET status = 'cancelled',
         seats_available = seats_total,
@@ -634,9 +632,12 @@ BEGIN
     WHERE status = 'scheduled'
       AND departure_time < now() - interval '30 minutes'
     RETURNING id
-  ) AS expired;
-
-  v_expired_count := COALESCE(array_length(v_expired_ids, 1), 0);
+  )
+  SELECT
+    COALESCE(array_agg(id), '{}'::uuid[]),
+    COUNT(*)
+  INTO v_expired_ids, v_expired_count
+  FROM expired;
 
   IF v_expired_count > 0 THEN
     UPDATE public.bookings
@@ -659,4 +660,3 @@ GRANT EXECUTE ON FUNCTION public.cancel_ride_by_driver(uuid, text) TO authentica
 GRANT EXECUTE ON FUNCTION public.get_rides_with_bookings(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.review_driver_application(uuid, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.auto_expire_rides() TO authenticated, service_role;
-

@@ -24,6 +24,16 @@ import type {
   RiderDashboardData,
 } from '../types'
 
+export interface SupportChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+interface AvailableRideRow extends Omit<Ride, 'driver' | 'vehicle'> {
+  driver: Ride['driver'] | null
+  vehicle: Ride['vehicle'] | null
+}
+
 const rideSelect = `
   *,
   driver:profiles!rides_driver_id_fkey(id,full_name,avatar_url),
@@ -34,9 +44,7 @@ async function invokeBackendFunction<TResponse>(
   name: string,
   body?: Record<string, unknown>,
 ): Promise<TResponse> {
-  const { data, error } = await withRetry(() =>
-    supabase.functions.invoke<TResponse>(name, body ? { body } : {})
-  )
+  const { data, error } = await supabase.functions.invoke<TResponse>(name, body ? { body } : {})
 
   if (error) {
     logDevError(`functions.${name}`, error)
@@ -46,33 +54,49 @@ async function invokeBackendFunction<TResponse>(
   return data as TResponse
 }
 
+function normalizeAvailableRideRow(row: AvailableRideRow): Ride {
+  return {
+    ...row,
+    driver: row.driver && typeof row.driver === 'object' ? row.driver : null,
+    vehicle: row.vehicle && typeof row.vehicle === 'object' ? row.vehicle : null,
+  }
+}
+
+function normalizeSupportChatMessages(messages: SupportChatMessage[]): SupportChatMessage[] {
+  return messages
+    .filter((message) => message.role === 'user' || message.role === 'assistant')
+    .map((message) => ({
+      role: message.role,
+      content: message.content.trim(),
+    }))
+    .filter((message) => message.content.length > 0)
+    .slice(-12)
+}
+
 /**
  * Get available rides for a specific city
  */
 export async function getAvailableRides(city: string): Promise<Ride[]> {
-  if (!city.trim()) return []
+  const normalizedCity = city.trim()
+  if (!normalizedCity) return []
 
   try {
-    const { data, error } = await withRetry(() =>
-      supabase
-        .from('rides')
-        .select(rideSelect)
-        .eq('city', city)
-        .in('status', ['scheduled', 'active'])
-        .gt('seats_available', 0)
-        .gte('departure_time', new Date().toISOString())
-        .order('departure_time', { ascending: true })
-    )
+    const data = await withRetry(async () => {
+      const { data, error } = await supabase.rpc('get_available_rides', {
+        p_city: normalizedCity,
+      })
 
-    if (error) {
-      logDevError('getAvailableRides', error)
-      throw new Error(mapApiErrorMessage(error, 'fetching rides'))
-    }
+      if (error) {
+        throw error
+      }
 
-    return (data ?? []) as Ride[]
+      return (data ?? []) as AvailableRideRow[]
+    }, 3, 250)
+
+    return data.map(normalizeAvailableRideRow)
   } catch (error) {
     logDevError('getAvailableRides', error)
-    throw error
+    throw new Error(mapApiErrorMessage(error, 'fetching rides'))
   }
 }
 
@@ -137,11 +161,9 @@ export async function createDriverRide(input: RideInput): Promise<Ride> {
  */
 export async function startDriverRide(rideId: string): Promise<Ride> {
   try {
-    const { data, error } = await withRetry(() =>
-      supabase.rpc('start_ride', {
-        p_ride_id: rideId,
-      })
-    )
+    const { data, error } = await supabase.rpc('start_ride', {
+      p_ride_id: rideId,
+    })
 
     if (error) {
       logDevError('startDriverRide', error)
@@ -160,11 +182,9 @@ export async function startDriverRide(rideId: string): Promise<Ride> {
  */
 export async function completeDriverRide(rideId: string): Promise<Ride> {
   try {
-    const { data, error } = await withRetry(() =>
-      supabase.rpc('complete_ride', {
-        p_ride_id: rideId,
-      })
-    )
+    const { data, error } = await supabase.rpc('complete_ride', {
+      p_ride_id: rideId,
+    })
 
     if (error) {
       logDevError('completeDriverRide', error)
@@ -183,12 +203,10 @@ export async function completeDriverRide(rideId: string): Promise<Ride> {
  */
 export async function cancelDriverRide(rideId: string, reason?: string): Promise<Ride> {
   try {
-    const { data, error } = await withRetry(() =>
-      supabase.rpc('cancel_ride_by_driver', {
-        p_ride_id: rideId,
-        p_reason: reason?.trim() || null,
-      })
-    )
+    const { data, error } = await supabase.rpc('cancel_ride_by_driver', {
+      p_ride_id: rideId,
+      p_reason: reason?.trim() || null,
+    })
 
     if (error) {
       logDevError('cancelDriverRide', error)
@@ -247,6 +265,33 @@ export async function subscribeToJournal(email: string): Promise<{ email: string
 }
 
 /**
+ * Send a support chat message through the authenticated backend function layer.
+ */
+export async function requestSupportChatReply(messages: SupportChatMessage[]): Promise<string> {
+  const normalizedMessages = normalizeSupportChatMessages(messages)
+
+  if (!normalizedMessages.length) {
+    throw new Error('A chat message is required.')
+  }
+
+  try {
+    const result = await invokeBackendFunction<{ content?: string }>('ai-support-chat', {
+      messages: normalizedMessages,
+    })
+    const content = typeof result?.content === 'string' ? result.content.trim() : ''
+
+    if (!content) {
+      throw new Error('AI support returned an empty response.')
+    }
+
+    return content
+  } catch (error) {
+    logDevError('requestSupportChatReply', error)
+    throw error
+  }
+}
+
+/**
  * Book a ride
  */
 export async function bookRide(
@@ -263,19 +308,17 @@ export async function bookRide(
   if (!user) throw new Error('Not authenticated.')
 
   try {
-    const { data: bookingId, error } = await withRetry(() =>
-      supabase.rpc('book_ride', {
-        p_ride_id: rideId,
-        p_rider_id: user.id,
-        p_seats: seats,
-        p_pickup_address: pickupAddress,
-        p_pickup_lat: pickupLat,
-        p_pickup_lng: pickupLng,
-        p_dest_address: destAddress,
-        p_dest_lat: destLat,
-        p_dest_lng: destLng,
-      })
-    )
+    const { data: bookingId, error } = await supabase.rpc('book_ride', {
+      p_ride_id: rideId,
+      p_rider_id: user.id,
+      p_seats: seats,
+      p_pickup_address: pickupAddress,
+      p_pickup_lat: pickupLat,
+      p_pickup_lng: pickupLng,
+      p_dest_address: destAddress,
+      p_dest_lat: destLat,
+      p_dest_lng: destLng,
+    })
 
     if (error) {
       logDevError('bookRide', error)
@@ -308,12 +351,10 @@ export async function cancelBooking(bookingId: string): Promise<void> {
   if (!user) throw new Error('Not authenticated.')
 
   try {
-    const { error } = await withRetry(() =>
-      supabase.rpc('cancel_booking', {
-        p_booking_id: bookingId,
-        p_rider_id: user.id,
-      })
-    )
+    const { error } = await supabase.rpc('cancel_booking', {
+      p_booking_id: bookingId,
+      p_rider_id: user.id,
+    })
 
     if (error) {
       logDevError('cancelBooking', error)

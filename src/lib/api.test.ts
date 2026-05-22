@@ -23,6 +23,7 @@ import {
   getDriverApplicationQueue,
   getAvailableRides,
   getNewsletterSubscribers,
+  requestSupportChatReply,
   getSupportInbox,
   reviewDriverApplication,
   startDriverRide,
@@ -41,14 +42,15 @@ describe("api", () => {
   });
 
   it("loads available rides for a city", async () => {
-    mockSupabaseClient.from.mockReturnValueOnce(
-      createQueryBuilder({
-        data: [mockRide],
-        error: null,
-      }),
-    );
+    mockSupabaseClient.rpc.mockResolvedValueOnce({
+      data: [mockRide],
+      error: null,
+    });
 
     await expect(getAvailableRides("Bangalore")).resolves.toEqual([mockRide]);
+    expect(mockSupabaseClient.rpc).toHaveBeenCalledWith("get_available_rides", {
+      p_city: "Bangalore",
+    });
   });
 
   it("creates a booking from the booking RPC and follow-up query", async () => {
@@ -321,5 +323,51 @@ describe("api", () => {
         email: "rider@example.com",
       },
     });
+  });
+
+  it("routes support chat through the backend function layer", async () => {
+    mockSupabaseClient.functions.invoke.mockResolvedValueOnce({
+      data: { content: "Your latest booking is still being matched." },
+      error: null,
+    });
+
+    await expect(
+      requestSupportChatReply([
+        {
+          role: "assistant",
+          content: "  Hi, I can help with bookings.  ",
+        },
+        {
+          role: "user",
+          content: "  What is the status of my ride?  ",
+        },
+      ]),
+    ).resolves.toBe("Your latest booking is still being matched.");
+
+    expect(mockSupabaseClient.functions.invoke).toHaveBeenCalledWith("ai-support-chat", {
+      body: {
+        messages: [
+          {
+            role: "assistant",
+            content: "Hi, I can help with bookings.",
+          },
+          {
+            role: "user",
+            content: "What is the status of my ride?",
+          },
+        ],
+      },
+    });
+  });
+
+  it("rejects support chat requests without any usable messages", async () => {
+    await expect(
+      requestSupportChatReply([
+        {
+          role: "user",
+          content: "   ",
+        },
+      ]),
+    ).rejects.toThrow("A chat message is required.");
   });
 });

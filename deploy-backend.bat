@@ -1,21 +1,27 @@
 @echo off
-REM Script to Deploy HopIn Backend Migration
-REM This script handles the deployment of the backend business logic migration
+setlocal
+REM Script to Deploy HopIn Supabase Backend
 
 echo ====================================================================
 echo     HOPIN BACKEND DEPLOYMENT SCRIPT
-echo     Migration: 010_backend_business_logic.sql
+echo     Target: Full Supabase migration chain through 012 + Edge Functions
 echo ====================================================================
 echo.
 
-REM Check if migration file exists
-if not exist "supabase\migrations\010_backend_business_logic.sql" (
-    echo ERROR: Migration file not found!
-    echo Expected: supabase\migrations\010_backend_business_logic.sql
+REM Check if the canonical migration and function entrypoints exist
+if not exist "supabase\migrations\012_ai_support_observability.sql" (
+    echo ERROR: Canonical migration file not found!
+    echo Expected: supabase\migrations\012_ai_support_observability.sql
     exit /b 1
 )
 
-echo [OK] Migration file found
+if not exist "supabase\functions\ai-support-chat\index.ts" (
+    echo ERROR: ai-support-chat function entrypoint not found!
+    echo Expected: supabase\functions\ai-support-chat\index.ts
+    exit /b 1
+)
+
+echo [OK] Canonical migration and function files found
 echo.
 
 REM Try to use Supabase CLI
@@ -27,13 +33,28 @@ where supabase >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo [OK] Supabase CLI found
     echo.
-    echo Deploying migration...
+    echo Applying migration chain...
     supabase db push
     if %ERRORLEVEL% EQU 0 (
         echo.
+        echo Deploying Edge Functions...
+        call :deploy_function submit-contact-message || goto :deploy_failed
+        call :deploy_function subscribe-to-journal || goto :deploy_failed
+        call :deploy_function ai-support-chat || goto :deploy_failed
+        call :deploy_function admin-review-driver-application || goto :deploy_failed
+        call :deploy_function expire-rides || goto :deploy_failed
+        echo.
         echo ====================================================================
-        echo SUCCESS! Migration deployed to Supabase
+        echo SUCCESS! Backend deployed to Supabase
         echo ====================================================================
+        echo.
+        echo Remember to configure the required function secrets:
+        echo   - SUPABASE_SERVICE_ROLE_KEY
+        echo   - GROQ_API_KEY
+        echo   - GROQ_MODEL (optional)
+        echo   - BACKEND_CRON_SECRET
+        echo.
+        echo Then attach a scheduler or secure webhook to expire-rides.
         echo.
         pause
         exit /b 0
@@ -47,49 +68,60 @@ if %ERRORLEVEL% EQU 0 (
     echo.
 )
 
-REM If CLI not available or failed, provide manual instructions
+goto :manual
+
+:deploy_function
+echo   - %~1
+supabase functions deploy %~1
+if %ERRORLEVEL% NEQ 0 (
+    exit /b 1
+)
+exit /b 0
+
+:deploy_failed
+echo.
+echo ERROR: One or more Edge Function deployments failed
+echo.
+
+:manual
 echo ====================================================================
 echo MANUAL DEPLOYMENT INSTRUCTIONS
 echo ====================================================================
 echo.
-echo Since automatic deployment failed, please deploy manually:
+echo Since automatic deployment failed, please deploy manually.
 echo.
-echo OPTION 1: Use Supabase Dashboard (Recommended for this environment)
-echo   1. Go to https://supabase.io/
-echo   2. Sign in to your account
-echo   3. Select the HopIn project
-echo   4. Click "SQL Editor" in the sidebar
-echo   5. Click "New Query"
-echo   6. Copy the entire content of: supabase\migrations\010_backend_business_logic.sql
-echo   7. Paste it into the SQL editor
-echo   8. Click "Run"
-echo   9. Wait for the success message
+echo OPTION 1: Use the Supabase CLI
+echo   1. Install and authenticate the CLI
+echo   2. Run: supabase db push
+echo   3. Run: supabase functions deploy submit-contact-message
+echo   4. Run: supabase functions deploy subscribe-to-journal
+echo   5. Run: supabase functions deploy ai-support-chat
+echo   6. Run: supabase functions deploy admin-review-driver-application
+echo   7. Run: supabase functions deploy expire-rides
 echo.
-echo OPTION 2: Use psql Command Line
-echo   psql postgresql://[user]:[password]@[host]:5432/[database] ^
-echo      -f supabase\migrations\010_backend_business_logic.sql
+echo OPTION 2: Use Supabase Dashboard for SQL, then CLI for functions
+echo   1. Open the project's SQL Editor
+echo   2. Apply the full migration chain through 012_ai_support_observability.sql
+echo   3. Deploy the five Edge Functions listed above
 echo.
-echo OPTION 3: Install Supabase CLI first
-echo   npm install -g @supabase/cli
-echo   Then run: supabase db push
+echo OPTION 3: Use psql for database changes
+echo   Apply the full supabase\migrations directory in order, then deploy functions.
 echo.
 echo ====================================================================
 echo.
+echo REQUIRED EDGE FUNCTION SECRETS:
+echo.
+echo   - SUPABASE_SERVICE_ROLE_KEY
+echo   - GROQ_API_KEY
+echo   - GROQ_MODEL (optional, defaults to llama3-8b-8192)
+echo   - BACKEND_CRON_SECRET
+echo.
 echo VERIFICATION AFTER DEPLOYMENT:
 echo.
-echo Run these queries in Supabase SQL Editor to verify:
-echo.
-echo 1. Check functions:
-echo    SELECT proname FROM pg_proc 
-echo    WHERE proname LIKE 'validate_ride%%' OR proname LIKE 'book_ride%%';
-echo.
-echo 2. Check triggers:
-echo    SELECT trigger_name FROM information_schema.triggers 
-echo    WHERE trigger_name LIKE 'tr_%%';
-echo.
-echo 3. Check indexes:
-echo    SELECT indexname FROM pg_indexes 
-echo    WHERE indexname LIKE 'idx_%%';
+echo   - Run npm run validate and npm run build locally
+echo   - Test signed-in dashboard chat via ai-support-chat
+echo   - Test contact form and newsletter signup
+echo   - Verify expire-rides is called by a scheduler with x-cron-secret
 echo.
 echo ====================================================================
 echo.

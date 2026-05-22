@@ -1,11 +1,21 @@
 import { errorResponse, HttpError, jsonResponse, corsHeaders } from "../_shared/http.ts";
+import { createFunctionLogger } from "../_shared/observability.ts";
 import { requireAdmin } from "../_shared/auth.ts";
-
-const validStatuses = new Set(["approved", "rejected", "pending"]);
+import {
+  parseDriverApplicationReviewBody,
+  PayloadValidationError,
+} from "../../../shared/backend/functionPayloads.ts";
 
 Deno.serve(async (request) => {
+  const logger = createFunctionLogger("admin-review-driver-application", request);
+
   if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", {
+      headers: {
+        ...corsHeaders,
+        "x-request-id": logger.requestId,
+      },
+    });
   }
 
   try {
@@ -13,29 +23,30 @@ Deno.serve(async (request) => {
       throw new HttpError(405, "Method not allowed");
     }
 
-    const { userClient } = await requireAdmin(request);
+    const { user, userClient } = await requireAdmin(request);
     const body = await request.json().catch(() => null);
-
-    const applicationId =
-      body && typeof body.applicationId === "string" ? body.applicationId.trim() : "";
-    const status = body && typeof body.status === "string" ? body.status.trim() : "";
-    const reviewNotes =
-      body && typeof body.reviewNotes === "string" ? body.reviewNotes.trim() : null;
-
-    if (!applicationId) {
-      throw new HttpError(400, "Application id is required");
+    let payload;
+    try {
+      payload = parseDriverApplicationReviewBody(body);
+    } catch (error) {
+      if (error instanceof PayloadValidationError) {
+        throw new HttpError(400, error.message);
+      }
+      throw error;
     }
 
-    if (!validStatuses.has(status)) {
-      throw new HttpError(400, "Invalid application status");
-    }
+    logger.info("driver_application.review_requested", {
+      actorId: user.id,
+      applicationId: payload.applicationId,
+      status: payload.status,
+    });
 
     const { data: reviewedId, error: reviewError } = await userClient.rpc(
       "review_driver_application",
       {
-        p_application_id: applicationId,
-        p_status: status,
-        p_review_notes: reviewNotes || null,
+        p_application_id: payload.applicationId,
+        p_status: payload.status,
+        p_review_notes: payload.reviewNotes,
       },
     );
 
@@ -46,15 +57,27 @@ Deno.serve(async (request) => {
     const { data: application, error: applicationError } = await userClient
       .from("driver_applications")
       .select("*")
-      .eq("id", (reviewedId as string) || applicationId)
+      .eq("id", (reviewedId as string) || payload.applicationId)
       .single();
 
     if (applicationError) {
       throw new HttpError(500, applicationError.message);
     }
 
-    return jsonResponse({ application });
+    logger.info("driver_application.review_completed", {
+      actorId: user.id,
+      applicationId: application.id,
+      status: application.status,
+    });
+
+    return jsonResponse(
+      { application },
+      { headers: { "x-request-id": logger.requestId } },
+    );
   } catch (error) {
-    return errorResponse(error);
+    logger.error("driver_application.review_failed", error);
+    return errorResponse(error, {
+      headers: { "x-request-id": logger.requestId },
+    });
   }
 });

@@ -15,6 +15,10 @@ const privacySections = [
     body: "We use modern infrastructure and access controls to reduce the risk of unauthorized access. Sensitive operational data should only be available to systems and staff who need it for platform integrity or support.",
   },
   {
+    title: "AI support and third-party processing",
+    body: "If you use AI support, your messages may be processed by a third-party model provider along with limited account and trip metadata such as role, city, booking status, seat count, fare, and departure time. HopIn is designed not to send passwords, OTPs, full payment details, or exact pickup and drop addresses through that support flow.",
+  },
+  {
     title: "User control",
     body: "Users should be able to review and correct profile information, manage communication preferences, and contact support when a data concern cannot be handled inside the product.",
   },
@@ -32,7 +36,7 @@ export default function Privacy() {
                 Privacy should be understandable by the people it affects.
               </>
             }
-            description="Updated on May 11, 2026. The page now uses the same structured reading pattern as the rest of the site instead of generic prose blocks."
+            description="Updated on May 22, 2026. The page now states how AI support handles messages and what data is intentionally kept out of that flow."
           />
         </div>
       </section>

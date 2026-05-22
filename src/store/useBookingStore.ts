@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { toast } from "sonner";
 
+import type { SupportedCity } from "../lib/cities";
 import { bookRide, cancelBooking } from "../lib/api";
 import type { Booking, Ride } from "../types";
 
@@ -8,7 +9,7 @@ export interface Location {
   lng: number;
   lat: number;
   address: string;
-  city?: "Mumbai" | "Delhi" | "Bangalore" | "Hyderabad" | "Pune" | "Chennai";
+  city?: SupportedCity;
 }
 
 export interface RideRequest {

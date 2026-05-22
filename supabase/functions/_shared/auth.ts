@@ -1,7 +1,7 @@
 import { HttpError } from "./http.ts";
 import { createServiceClient, createUserClient } from "./supabase.ts";
 
-export async function requireAdmin(request: Request) {
+export async function requireAuthenticatedUser(request: Request) {
   const authHeader = request.headers.get("Authorization");
   if (!authHeader) {
     throw new HttpError(401, "Missing Authorization header");
@@ -18,6 +18,12 @@ export async function requireAdmin(request: Request) {
   }
 
   const serviceClient = createServiceClient();
+
+  return { user, userClient, serviceClient };
+}
+
+export async function requireAdmin(request: Request) {
+  const { user, userClient, serviceClient } = await requireAuthenticatedUser(request);
   const { data: profile, error: profileError } = await serviceClient
     .from("profiles")
     .select("id, role")

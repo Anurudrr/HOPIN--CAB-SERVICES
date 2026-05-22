@@ -10,7 +10,7 @@ The app is locally validated and buildable.
 
 The canonical backend migration is:
 
-- `supabase/migrations/011_backend_runtime_consolidation.sql`
+- `supabase/migrations/012_ai_support_observability.sql`
 
 The server-side function layer is in:
 
@@ -40,6 +40,7 @@ supabase db push
 ```bash
 supabase functions deploy submit-contact-message
 supabase functions deploy subscribe-to-journal
+supabase functions deploy ai-support-chat
 supabase functions deploy admin-review-driver-application
 supabase functions deploy expire-rides
 ```
@@ -47,6 +48,8 @@ supabase functions deploy expire-rides
 3. Configure function secrets.
 
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `GROQ_API_KEY`
+- `GROQ_MODEL` optional, defaults to `llama3-8b-8192`
 - `BACKEND_CRON_SECRET`
 
 4. Set up a scheduler or secure webhook for `expire-rides`.

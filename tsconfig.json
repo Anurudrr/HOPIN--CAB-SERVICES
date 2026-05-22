@@ -30,6 +30,6 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "vite.config.ts", "vitest.config.ts"],
+  "include": ["src", "shared", "vite.config.ts", "vitest.config.ts"],
   "exclude": ["dist", "node_modules", "supabase/functions"]
 }

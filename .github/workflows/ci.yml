@@ -16,8 +16,8 @@ jobs:
           node-version: 22
           cache: 'npm'
       - run: npm ci
-      - name: Type check
-        run: npm run lint
+      - name: Validate
+        run: npm run validate
       - name: Build
         run: npm run build
         env:

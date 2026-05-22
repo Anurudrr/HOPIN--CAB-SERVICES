@@ -3,6 +3,7 @@ import { Mail, MapPin, Phone } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import { submitContactMessage } from "../lib/api";
+import { contactSchema } from "../lib/validation";
 import { Reveal } from "../components/site/Reveal";
 import { SectionHeading } from "../components/site/SectionHeading";
 import { Button } from "../components/ui/Button";
@@ -52,6 +53,10 @@ function buildPrefillMessage(requestedRole: string | null, requestedCity: string
   return "";
 }
 
+function normalizeRequestedRole(value: string | null) {
+  return value === "rider" || value === "driver" ? value : undefined;
+}
+
 export default function Contact() {
   const [searchParams] = useSearchParams();
   const requestedTopic = searchParams.get("topic");
@@ -81,13 +86,17 @@ export default function Contact() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!formState.name.trim() || !formState.email.trim() || !formState.message.trim()) {
-      setError("Fill in your name, email, and message.");
-      return;
-    }
+    const parsedInput = contactSchema.safeParse({
+      name: formState.name.trim(),
+      email: formState.email.trim().toLowerCase(),
+      topic: formState.topic,
+      message: formState.message.trim(),
+      requestedRole: normalizeRequestedRole(requestedRole),
+      requestedCity: requestedCity || undefined,
+    });
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.email)) {
-      setError("Enter a valid email address.");
+    if (!parsedInput.success) {
+      setError(parsedInput.error.errors[0]?.message || "Fill in the contact form before submitting.");
       return;
     }
 
@@ -95,14 +104,7 @@ export default function Contact() {
     setIsSubmitting(true);
 
     try {
-      await submitContactMessage({
-        name: formState.name.trim(),
-        email: formState.email.trim().toLowerCase(),
-        topic: formState.topic,
-        message: formState.message.trim(),
-        requestedRole,
-        requestedCity,
-      });
+      await submitContactMessage(parsedInput.data);
       setSubmitted(true);
     } catch (submissionError) {
       setError(

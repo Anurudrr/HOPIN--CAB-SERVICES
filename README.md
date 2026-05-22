@@ -10,6 +10,7 @@ HopIn is a shared urban mobility web app for Indian cities. The frontend is buil
 - Motion for React
 - React Leaflet
 - Supabase Auth + Postgres + Edge Functions
+- Groq Chat Completions API for authenticated support chat
 
 ## Local Development
 
@@ -42,7 +43,7 @@ The repo includes SQL migrations in `supabase/migrations` for:
 - Admin review and operations policies
 - Backend runtime hardening, audit logs, and scheduled expiry support
 
-Apply the full migration chain through `011_backend_runtime_consolidation.sql` before using the production flows. The new server-side function entrypoints live in `supabase/functions`.
+Apply the full migration chain through `012_ai_support_observability.sql` before using the production flows. The server-side function entrypoints in `supabase/functions` now also include the authenticated `ai-support-chat` assistant used by the dashboard widget.
 
 ## Build
 
@@ -72,7 +73,7 @@ See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for testing standards and coverage re
 ### Prerequisites
 
 1. **Supabase Database Setup**
-   - Apply the full `supabase/migrations` chain, including `011_backend_runtime_consolidation.sql`
+   - Apply the full `supabase/migrations` chain, including `012_ai_support_observability.sql`
    - Deploy the Edge Functions in `supabase/functions`
    - Verify schema and runtime setup with [docs/BACKEND_ARCHITECTURE.md](./docs/BACKEND_ARCHITECTURE.md)
 
@@ -83,6 +84,8 @@ See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for testing standards and coverage re
 
    Set these in Supabase Edge Functions:
    - `SUPABASE_SERVICE_ROLE_KEY`
+   - `GROQ_API_KEY`
+   - `GROQ_MODEL` (optional, defaults to `llama3-8b-8192`)
    - `BACKEND_CRON_SECRET`
 
 3. **Pre-Deployment Checklist**

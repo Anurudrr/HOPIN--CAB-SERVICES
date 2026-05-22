@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+import { supportedCities } from './cities';
+
+export const MIN_DRIVER_VEHICLE_YEAR = 2000;
+export const MAX_DRIVER_VEHICLE_YEAR = new Date().getFullYear() + 1;
+export const MIN_DRIVER_CAPACITY = 2;
+export const MAX_DRIVER_CAPACITY = 8;
+
 // Auth Schemas
 export const signUpSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -51,10 +58,10 @@ export const driverApplicationSchema = z.object({
   licenseExpiry: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)'),
   make: z.string().min(2, 'Vehicle make is required'),
   model: z.string().min(2, 'Vehicle model is required'),
-  year: z.number().int().min(2000).max(new Date().getFullYear() + 1, 'Invalid year'),
+  year: z.number().int().min(MIN_DRIVER_VEHICLE_YEAR).max(MAX_DRIVER_VEHICLE_YEAR, 'Invalid year'),
   plate: z.string().min(4, 'License plate is required'),
   color: z.string().min(3, 'Color is required'),
-  capacity: z.number().int().min(2).max(8, 'Capacity must be between 2 and 8'),
+  capacity: z.number().int().min(MIN_DRIVER_CAPACITY).max(MAX_DRIVER_CAPACITY, 'Capacity must be between 2 and 8'),
   documentUrl: z.string().optional(),
 });
 
@@ -68,7 +75,7 @@ export const rideSchema = z.object({
   destination_name: z.string().min(3, 'Destination is required'),
   destination_lat: z.number().min(-90).max(90),
   destination_lng: z.number().min(-180).max(180),
-  city: z.enum(['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Pune', 'Chennai']),
+  city: z.enum(supportedCities),
   departure_time: z.string().datetime('Invalid date format'),
   seats_total: z.number().int().min(2).max(8),
   fare_per_seat: z.number().positive('Fare must be positive'),

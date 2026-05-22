@@ -1,9 +1,21 @@
 import { corsHeaders, errorResponse, HttpError, jsonResponse } from "../_shared/http.ts";
+import { createFunctionLogger } from "../_shared/observability.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
+import {
+  parseContactMessageBody,
+  PayloadValidationError,
+} from "../../../shared/backend/functionPayloads.ts";
 
 Deno.serve(async (request) => {
+  const logger = createFunctionLogger("submit-contact-message", request);
+
   if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", {
+      headers: {
+        ...corsHeaders,
+        "x-request-id": logger.requestId,
+      },
+    });
   }
 
   try {
@@ -12,29 +24,33 @@ Deno.serve(async (request) => {
     }
 
     const body = await request.json().catch(() => null);
-    const name = body && typeof body.name === "string" ? body.name.trim() : "";
-    const email = body && typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    const topic = body && typeof body.topic === "string" ? body.topic.trim() : "";
-    const message = body && typeof body.message === "string" ? body.message.trim() : "";
-    const requestedRole =
-      body && typeof body.requestedRole === "string" ? body.requestedRole.trim() : "";
-    const requestedCity =
-      body && typeof body.requestedCity === "string" ? body.requestedCity.trim() : "";
-
-    if (!name || !email || !topic || !message) {
-      throw new HttpError(400, "Name, email, topic, and message are required");
+    let payload;
+    try {
+      payload = parseContactMessageBody(body);
+    } catch (error) {
+      if (error instanceof PayloadValidationError) {
+        throw new HttpError(400, error.message);
+      }
+      throw error;
     }
+
+    logger.info("contact_message.received", {
+      topic: payload.topic,
+      emailDomain: payload.email.split("@")[1] || null,
+      hasRequestedRole: Boolean(payload.requestedRole),
+      hasRequestedCity: Boolean(payload.requestedCity),
+    });
 
     const serviceClient = createServiceClient();
     const { data, error } = await serviceClient
       .from("contact_messages")
       .insert({
-        name,
-        email,
-        topic,
-        message,
-        requested_role: requestedRole || null,
-        requested_city: requestedCity || null,
+        name: payload.name,
+        email: payload.email,
+        topic: payload.topic,
+        message: payload.message,
+        requested_role: payload.requestedRole,
+        requested_city: payload.requestedCity,
       })
       .select("id")
       .single();
@@ -43,8 +59,18 @@ Deno.serve(async (request) => {
       throw new HttpError(500, error.message);
     }
 
-    return jsonResponse({ id: data.id });
+    logger.info("contact_message.saved", {
+      contactMessageId: data.id,
+    });
+
+    return jsonResponse(
+      { id: data.id },
+      { headers: { "x-request-id": logger.requestId } },
+    );
   } catch (error) {
-    return errorResponse(error);
+    logger.error("contact_message.failed", error);
+    return errorResponse(error, {
+      headers: { "x-request-id": logger.requestId },
+    });
   }
 });

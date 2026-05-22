@@ -9,5 +9,8 @@ verify_jwt = false
 [functions.subscribe-to-journal]
 verify_jwt = false
 
+[functions.ai-support-chat]
+verify_jwt = true
+
 [functions.expire-rides]
 verify_jwt = false

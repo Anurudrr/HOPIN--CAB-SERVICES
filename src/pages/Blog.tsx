@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { subscribeToJournal } from "../lib/api";
+import { newsletterSchema } from "../lib/validation";
 import { Reveal } from "../components/site/Reveal";
 import { SectionHeading } from "../components/site/SectionHeading";
 import { Button } from "../components/ui/Button";
@@ -16,13 +17,12 @@ export default function Blog() {
   const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!email.trim()) {
-      setError("Enter an email address.");
-      return;
-    }
+    const parsedInput = newsletterSchema.safeParse({
+      email: email.trim().toLowerCase(),
+    });
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Enter a valid email address.");
+    if (!parsedInput.success) {
+      setError(parsedInput.error.errors[0]?.message || "Enter a valid email address.");
       return;
     }
 
@@ -30,7 +30,7 @@ export default function Blog() {
     setIsSubmitting(true);
 
     try {
-      const result = await subscribeToJournal(email.trim().toLowerCase());
+      const result = await subscribeToJournal(parsedInput.data.email);
       setSubmittedFor(result.email);
     } catch (subscriptionError) {
       setError(

@@ -25,6 +25,7 @@ source of truth in this repo.
 - `newsletter_subscriptions`
 - `admin_action_logs`
 - `backend_job_runs`
+- `support_chat_events`
 
 ### Canonical RPCs
 
@@ -41,6 +42,7 @@ source of truth in this repo.
 
 - `submit-contact-message`
 - `subscribe-to-journal`
+- `ai-support-chat`
 - `admin-review-driver-application`
 - `expire-rides`
 
@@ -55,10 +57,11 @@ Apply the full `supabase/migrations` directory. The important milestones are:
 - `009_admin_operations_read_access.sql`: admin read access
 - `010_backend_business_logic.sql`: legacy hardening
 - `011_backend_runtime_consolidation.sql`: authoritative runtime consolidation
+- `012_ai_support_observability.sql`: AI support audit logging and rate-limit support
 
-`011_backend_runtime_consolidation.sql` is the current canonical hardening
-layer. It adds audit/job tables, updated-at triggers, and the final lifecycle
-RPC implementations.
+`011_backend_runtime_consolidation.sql` remains the main runtime consolidation
+layer. `012_ai_support_observability.sql` extends it with AI support audit
+logging and admin-visible support chat observability.
 
 ## Environment Variables
 
@@ -72,6 +75,8 @@ RPC implementations.
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `GROQ_API_KEY`
+- `GROQ_MODEL` optional, defaults to `llama3-8b-8192`
 - `BACKEND_CRON_SECRET`
 
 ## Deployment
@@ -87,6 +92,7 @@ Suggested commands:
 supabase db push
 supabase functions deploy submit-contact-message
 supabase functions deploy subscribe-to-journal
+supabase functions deploy ai-support-chat
 supabase functions deploy admin-review-driver-application
 supabase functions deploy expire-rides
 ```
@@ -96,4 +102,5 @@ supabase functions deploy expire-rides
 - `src/lib/env.ts` intentionally exposes only browser-safe Supabase variables.
 - Admin-side auditing is stored in `admin_action_logs`.
 - Scheduled backend job runs are stored in `backend_job_runs`.
+- AI support audit rows are stored in `support_chat_events`.
 - Empty `backend` / `backend-new` folders are not the production backend.

@@ -24,11 +24,17 @@ export function jsonResponse(body: unknown, init: ResponseInit = {}) {
   });
 }
 
-export function errorResponse(error: unknown) {
+export function errorResponse(error: unknown, init: ResponseInit = {}) {
   if (error instanceof HttpError) {
-    return jsonResponse({ error: error.message }, { status: error.status });
+    return jsonResponse({ error: error.message }, {
+      ...init,
+      status: error.status,
+    });
   }
 
   const message = error instanceof Error ? error.message : "Internal server error";
-  return jsonResponse({ error: message }, { status: 500 });
+  return jsonResponse({ error: message }, {
+    ...init,
+    status: 500,
+  });
 }

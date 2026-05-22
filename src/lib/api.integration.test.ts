@@ -57,12 +57,10 @@ describe("API Integration: Rides", () => {
       },
     ];
 
-    mockSupabaseClient.from.mockReturnValueOnce(
-      createQueryBuilder({
-        data: mockRides,
-        error: null,
-      }),
-    );
+    mockSupabaseClient.rpc.mockResolvedValueOnce({
+      data: mockRides,
+      error: null,
+    });
 
     await expect(getAvailableRides("Mumbai")).resolves.toEqual(mockRides);
   });
@@ -72,12 +70,10 @@ describe("API Integration: Rides", () => {
   });
 
   it("surfaces API errors with a user-friendly message", async () => {
-    mockSupabaseClient.from.mockReturnValueOnce(
-      createQueryBuilder({
-        data: null,
-        error: new Error("network timeout"),
-      }),
-    );
+    mockSupabaseClient.rpc.mockResolvedValue({
+      data: null,
+      error: new Error("network timeout"),
+    });
 
     await expect(getAvailableRides("Mumbai")).rejects.toThrow(
       "Network error. Please check your connection and try again",

@@ -34,6 +34,7 @@ Apply the full migration chain, including:
 - `009_admin_operations_read_access.sql`
 - `010_backend_business_logic.sql`
 - `011_backend_runtime_consolidation.sql`
+- `012_ai_support_observability.sql`
 
 Recommended command:
 
@@ -48,6 +49,7 @@ Deploy these functions:
 ```bash
 supabase functions deploy submit-contact-message
 supabase functions deploy subscribe-to-journal
+supabase functions deploy ai-support-chat
 supabase functions deploy admin-review-driver-application
 supabase functions deploy expire-rides
 ```
@@ -57,10 +59,12 @@ supabase functions deploy expire-rides
 Required:
 
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `GROQ_API_KEY`
 - `BACKEND_CRON_SECRET`
 
 Optional:
 
+- `GROQ_MODEL` override for `ai-support-chat` if you do not want the default
 - provider-specific secrets for email, SMS, or monitoring if you add them later
 
 ## 3. Scheduler Setup
@@ -96,7 +100,8 @@ Verify these flows against the live project:
 5. Review a driver application through the admin function
 6. Submit a contact message
 7. Subscribe to the newsletter
-8. Confirm expired scheduled rides are cancelled by the cron function
+8. Open the dashboard while signed in and verify `ai-support-chat` returns a response
+9. Confirm expired scheduled rides are cancelled by the cron function
 
 ## 6. Rollback
 
