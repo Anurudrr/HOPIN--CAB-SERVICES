@@ -1,14 +1,44 @@
 import { Bell, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import * as React from "react";
 
 import { DriverDashboard } from "../components/dashboard/DriverDashboard";
 import { RiderDashboard } from "../components/dashboard/RiderDashboard";
 import { useAuthStore } from "../store/useAuthStore";
 import { Avatar } from "../components/ui/Avatar";
+import { AIChatWidget } from "../components/AIChatWidget";
+import { getRiderDashboardData } from "../lib/api";
+import type { Booking } from "../types";
 
 export default function Dashboard() {
   const { profile } = useAuthStore();
   const navigate = useNavigate();
+  const [recentBookings, setRecentBookings] = React.useState<Booking[]>([]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadBookings = async () => {
+      if (!profile?.id || profile.role !== "rider") return;
+
+      try {
+        const data = await getRiderDashboardData();
+        if (isMounted) {
+          setRecentBookings(data.recentBookings ?? []);
+        }
+      } catch {
+        if (isMounted) {
+          setRecentBookings([]);
+        }
+      }
+    };
+
+    void loadBookings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [profile?.id, profile?.role]);
 
   if (!profile) {
     return (
@@ -23,6 +53,7 @@ export default function Dashboard() {
 
   return (
     <div className="section-shell pt-6">
+      <AIChatWidget profile={profile} recentBookings={recentBookings} />
       <div className="section-frame space-y-6">
         <header className="panel flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
