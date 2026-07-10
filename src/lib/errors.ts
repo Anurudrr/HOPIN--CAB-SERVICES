@@ -39,6 +39,8 @@ export function mapAuthErrorMessage(error: unknown): string {
     "Invalid email": "Please enter a valid email address",
     "Password too short": "Password must be at least 8 characters",
     "Email change token expired": "Email confirmation link has expired",
+    "Token has expired or is invalid": "Email confirmation code is invalid or expired",
+    "Otp has expired or is invalid": "Email confirmation code is invalid or expired",
   };
 
   return errorMap[message] || message;

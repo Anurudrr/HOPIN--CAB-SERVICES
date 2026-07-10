@@ -1,29 +1,29 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 
+import { AuthShell } from '../components/auth/AuthShell';
+import { ButtonLink } from '../components/ui/Button';
 import { mapAuthErrorMessage } from '../lib/errors';
+import { signInSchema, signUpSchema } from '../lib/validation';
 import { useAuthStore } from '../store/useAuthStore';
 
-const loginSchema = z.object({
-  email: z.string().email({ message: 'Invalid email' }),
-  password: z.string().min(6, { message: 'Min 6 chars' }),
-});
-
-const signupSchema = z.object({
-  name: z.string().min(2, { message: 'Min 2 chars' }),
-  email: z.string().email({ message: 'Invalid email' }),
-  password: z.string().min(6, { message: 'Min 6 chars' }),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
-type SignupFormValues = z.infer<typeof signupSchema>;
+type LoginFormValues = {
+  email: string;
+  password: string;
+};
+type SignupFormValues = {
+  fullName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
 
 const Auth = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +40,7 @@ const Auth = () => {
     handleSubmit: handleLoginSubmit,
     formState: { errors: loginErrors },
   } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(signInSchema),
   });
 
   const {
@@ -48,7 +48,7 @@ const Auth = () => {
     handleSubmit: handleSignupSubmit,
     formState: { errors: signupErrors },
   } = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
+    resolver: zodResolver(signUpSchema),
   });
 
   if (loading || (user && !profile)) {
@@ -83,8 +83,10 @@ const Auth = () => {
     setSuccessMsg(null);
 
     try {
-      await signUp(data.email, data.password, data.name);
-      setSuccessMsg('Check your email to confirm your account before signing in.');
+      await signUp(data.email, data.password, data.fullName);
+      navigate(`/verify-email?email=${encodeURIComponent(data.email)}`, {
+        replace: true,
+      });
     } catch (authError: unknown) {
       setError(mapAuthErrorMessage(authError));
     } finally {
@@ -93,30 +95,15 @@ const Auth = () => {
   };
 
   return (
-    <div className="relative mt-20 flex flex-grow items-center justify-center overflow-hidden bg-white px-4 py-20 sm:px-6 lg:px-8">
-      <div
-        className="absolute inset-0 opacity-[0.05]"
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
-        }}
-      />
-
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-md border-4 border-black bg-white p-10 shadow-premium"
-      >
-        <div className="mb-10 border-b-4 border-black pb-8 text-center">
-          <h2 className="mb-2 text-4xl font-black uppercase tracking-tighter text-black sm:text-6xl">
-            {isLogin ? 'Enter.' : 'Join.'}
-          </h2>
-          <p className="text-xs font-bold uppercase tracking-widest text-black">
-            {isLogin ? 'Welcome back to HopIn' : 'Start your journey today'}
-          </p>
-        </div>
+    <AuthShell
+      eyebrow={isLogin ? "Account access" : "Create account"}
+      title={isLogin ? "Enter." : "Join."}
+      description={
+        isLogin
+          ? "Log in to manage bookings, provider activity, notifications, and account settings."
+          : "Create your HopIn account to start booking services or apply as a provider."
+      }
+    >
 
         {error ? (
           <motion.div
@@ -172,13 +159,14 @@ const Auth = () => {
                     <label className="block text-xs font-bold uppercase tracking-widest text-black">
                       Password
                     </label>
-                    <button
-                      type="button"
-                      disabled
-                      className="text-[10px] font-bold uppercase tracking-widest text-gray-400"
+                    <ButtonLink
+                      to="/forgot-password"
+                      variant="ghost"
+                      size="sm"
+                      className="!px-0 !py-0 text-[10px] tracking-widest"
                     >
-                      Password reset soon
-                    </button>
+                      Forgot password
+                    </ButtonLink>
                   </div>
                   <input
                     {...registerLogin('password')}
@@ -223,14 +211,14 @@ const Auth = () => {
                     Full Name
                   </label>
                   <input
-                    {...registerSignup('name')}
+                    {...registerSignup('fullName')}
                     type="text"
                     placeholder="JOHN DOE"
                     className="w-full border-2 border-black bg-transparent px-4 py-4 font-bold uppercase text-black transition-all placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-black/20"
                   />
-                  {signupErrors.name ? (
+                  {signupErrors.fullName ? (
                     <p className="mt-2 inline-block bg-gray-200 px-2 py-1 text-xs font-bold uppercase text-black">
-                      {signupErrors.name.message}
+                      {signupErrors.fullName.message}
                     </p>
                   ) : null}
                 </div>
@@ -269,6 +257,23 @@ const Auth = () => {
                   ) : null}
                 </div>
 
+                <div>
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-black">
+                    Confirm Password
+                  </label>
+                  <input
+                    {...registerSignup('confirmPassword')}
+                    type="password"
+                    placeholder="********"
+                    className="w-full border-2 border-black bg-transparent px-4 py-4 font-bold text-black transition-all placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-black/20"
+                  />
+                  {signupErrors.confirmPassword ? (
+                    <p className="mt-2 inline-block bg-gray-200 px-2 py-1 text-xs font-bold uppercase text-black">
+                      {signupErrors.confirmPassword.message}
+                    </p>
+                  ) : null}
+                </div>
+
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -303,8 +308,7 @@ const Auth = () => {
             </button>
           </p>
         </div>
-      </motion.div>
-    </div>
+    </AuthShell>
   );
 };
 

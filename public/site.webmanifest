@@ -8,9 +8,34 @@
   "description": "Shared rides across Indian cities with clearer routes, fairer fares, and calmer trip UX.",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/pwa-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "navigation", "transportation"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Book a Ride",
+      "short_name": "Book",
+      "description": "Find and book a shared ride",
+      "url": "/book",
+      "icons": [{ "src": "/pwa-192x192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View your upcoming and past rides",
+      "url": "/dashboard",
+      "icons": [{ "src": "/pwa-192x192.svg", "sizes": "192x192" }]
     }
   ]
 }

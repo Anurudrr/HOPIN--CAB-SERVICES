@@ -1,4 +1,5 @@
 import { Component, ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
 
 interface Props {
   children: ReactNode;
@@ -23,16 +24,21 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log to error tracking service (Sentry, LogRocket, etc)
+    Sentry.captureException(error, {
+      extra: {
+        componentStack: errorInfo.componentStack,
+      },
+    });
     console.error('[ErrorBoundary]', error, errorInfo);
   }
 
-  handleReload = () => {
+  handleReload() {
     window.location.href = '/';
-  };
+  }
 
-  handleReloadPage = () => {
+  handleReloadPage() {
     window.location.reload();
-  };
+  }
 
   render() {
     if (this.state.hasError) {
@@ -75,14 +81,14 @@ export class ErrorBoundary extends Component<Props, State> {
             {/* Action Buttons */}
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <button
-                onClick={this.handleReloadPage}
+                onClick={() => this.handleReloadPage()}
                 className="flex-1 px-6 py-3 bg-black text-white font-bold uppercase tracking-widest text-sm border-2 border-black hover:bg-white hover:text-black transition-colors shadow-soft"
                 aria-label="Reload the page"
               >
                 Reload Page
               </button>
               <button
-                onClick={this.handleReload}
+                onClick={() => this.handleReload()}
                 className="flex-1 px-6 py-3 bg-white text-black font-bold uppercase tracking-widest text-sm border-2 border-black hover:bg-black hover:text-white transition-colors shadow-soft"
                 aria-label="Return to home"
               >

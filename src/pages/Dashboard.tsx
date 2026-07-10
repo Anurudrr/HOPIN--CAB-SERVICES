@@ -1,15 +1,103 @@
+import * as React from "react";
 import { Bell, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import { DriverDashboard } from "../components/dashboard/DriverDashboard";
-import { RiderDashboard } from "../components/dashboard/RiderDashboard";
+import { getNotifications, markAllNotificationsRead, markNotificationRead } from "../lib/platformApi";
+import { normalizeAppRole } from "../lib/roles";
+import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../store/useAuthStore";
 import { Avatar } from "../components/ui/Avatar";
 import { AIChatWidget } from "../components/AIChatWidget";
+import type { NotificationItem } from "../types";
+
+const AdminDashboard = React.lazy(() =>
+  import("../components/dashboard/AdminDashboard").then((module) => ({
+    default: module.AdminDashboard,
+  })),
+);
+const DriverDashboard = React.lazy(() =>
+  import("../components/dashboard/DriverDashboard").then((module) => ({
+    default: module.DriverDashboard,
+  })),
+);
+const NotificationCenter = React.lazy(() =>
+  import("../components/dashboard/NotificationCenter").then((module) => ({
+    default: module.NotificationCenter,
+  })),
+);
+const RiderDashboard = React.lazy(() =>
+  import("../components/dashboard/RiderDashboard").then((module) => ({
+    default: module.RiderDashboard,
+  })),
+);
 
 export default function Dashboard() {
   const { profile } = useAuthStore();
   const navigate = useNavigate();
+  const role = normalizeAppRole(profile?.role);
+  const [notificationsOpen, setNotificationsOpen] = React.useState(false);
+  const [notifications, setNotifications] = React.useState<NotificationItem[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!profile?.id) {
+      setNotifications([]);
+      return;
+    }
+
+    let active = true;
+    setNotificationsLoading(true);
+
+    void getNotifications(12)
+      .then((items) => {
+        if (active) {
+          setNotifications(items);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setNotifications([]);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setNotificationsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [profile?.id]);
+
+  React.useEffect(() => {
+    if (!profile?.id) {
+      return;
+    }
+
+    const channel = supabase
+      .channel(`dashboard-notifications-${profile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `receiver_id=eq.${profile.id}`,
+        },
+        async () => {
+          const items = await getNotifications(12);
+          setNotifications(items);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [profile?.id]);
+
+  const unreadCount = notifications.filter((notification) => !notification.is_read).length;
 
   if (!profile) {
     return (
@@ -45,12 +133,18 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div
-              aria-hidden="true"
-              className="flex h-12 w-12 items-center justify-center rounded-none border-2 border-black bg-white text-black"
+            <button
+              onClick={() => setNotificationsOpen((current) => !current)}
+              aria-label="Open notifications"
+              className="relative flex h-12 w-12 items-center justify-center rounded-none border-2 border-black bg-white text-black shadow-soft hover:bg-black hover:text-white"
             >
               <Bell size={18} />
-            </div>
+              {unreadCount ? (
+                <span className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center border-2 border-black bg-black px-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">
+                  {unreadCount}
+                </span>
+              ) : null}
+            </button>
             <button
               onClick={() => navigate("/profile")}
               aria-label="Open profile settings"
@@ -61,11 +155,47 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {profile.role === "driver" ? (
-          <DriverDashboard />
-        ) : (
-          <RiderDashboard profile={profile} />
-        )}
+        {notificationsOpen ? (
+          <React.Suspense
+            fallback={
+              <div className="panel px-6 py-5 text-sm text-black/60">Loading notification center.</div>
+            }
+          >
+            <NotificationCenter
+              notifications={notifications}
+              loading={notificationsLoading}
+              onMarkRead={(notificationId) => {
+                void markNotificationRead(notificationId).then(async () => {
+                  const items = await getNotifications(12);
+                  setNotifications(items);
+                });
+              }}
+              onMarkAllRead={() => {
+                void markAllNotificationsRead().then(async () => {
+                  const items = await getNotifications(12);
+                  setNotifications(items);
+                });
+              }}
+            />
+          </React.Suspense>
+        ) : null}
+
+        <React.Suspense
+          fallback={
+            <div className="panel flex items-center gap-4 px-6 py-5">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-black border-t-transparent" />
+              <p className="text-sm font-medium text-black/60">Loading dashboard modules.</p>
+            </div>
+          }
+        >
+          {role === "admin" ? (
+            <AdminDashboard />
+          ) : role === "provider" ? (
+            <DriverDashboard />
+          ) : (
+            <RiderDashboard profile={profile} />
+          )}
+        </React.Suspense>
       </div>
     </div>
   );

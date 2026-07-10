@@ -1,9 +1,9 @@
 import { create } from 'zustand'
-import type { Session, User } from '@supabase/supabase-js'
+import type { EmailOtpType, Session, User } from '@supabase/supabase-js'
 
-import { getErrorMessage, logDevError } from '@/src/lib/errors'
-import { buildProfile, type ProfileRow } from '@/src/lib/profile'
-import { supabase } from '@/src/lib/supabase'
+import { getErrorMessage, logDevError } from '../lib/errors'
+import { buildProfile, type ProfileRow } from '../lib/profile'
+import { supabase } from '../lib/supabase'
 import type { Profile } from '../types'
 
 interface AuthState {
@@ -14,12 +14,81 @@ interface AuthState {
   signUp: (email: string, password: string, fullName: string) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  requestPasswordReset: (email: string) => Promise<void>
+  updatePassword: (password: string) => Promise<void>
+  resendSignupOtp: (email: string) => Promise<void>
+  verifyEmailOtp: (email: string, token: string) => Promise<void>
+  completeEmailVerification: (params: {
+    accessToken?: string | null
+    refreshToken?: string | null
+    code?: string | null
+    tokenHash?: string | null
+    token?: string | null
+    email?: string | null
+    type?: string | null
+  }) => Promise<void>
   fetchProfile: () => Promise<void>
   initialize: () => Promise<void>
 }
 
 let initializePromise: Promise<void> | null = null
 let authSubscriptionRegistered = false
+
+const emailVerificationFallbackTypes: EmailOtpType[] = ['email', 'signup']
+
+function normalizeEmailOtpType(type?: string | null): EmailOtpType | null {
+  if (!type) {
+    return null
+  }
+
+  const value = type.trim().toLowerCase()
+  const validTypes: EmailOtpType[] = [
+    'email',
+    'signup',
+    'magiclink',
+    'invite',
+    'recovery',
+    'email_change',
+  ]
+
+  return validTypes.includes(value as EmailOtpType) ? (value as EmailOtpType) : null
+}
+
+async function verifyEmailChallenge(params: {
+  email?: string | null
+  token?: string | null
+  tokenHash?: string | null
+  type?: string | null
+}) {
+  const verificationType = normalizeEmailOtpType(params.type)
+  const verificationTypes = verificationType
+    ? [verificationType, ...emailVerificationFallbackTypes.filter((type) => type !== verificationType)]
+    : emailVerificationFallbackTypes
+
+  let lastError: Error | null = null
+
+  for (const type of verificationTypes) {
+    const request = params.tokenHash
+      ? { token_hash: params.tokenHash, type }
+      : params.email && params.token
+        ? { email: params.email, token: params.token, type }
+        : null
+
+    if (!request) {
+      break
+    }
+
+    const { error } = await supabase.auth.verifyOtp(request)
+
+    if (!error) {
+      return
+    }
+
+    lastError = error
+  }
+
+  throw lastError ?? new Error('Verification information is incomplete.')
+}
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -85,7 +154,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName } },
+        options: {
+          data: { full_name: fullName },
+          emailRedirectTo: `${window.location.origin}/verify-email`,
+        },
       })
 
       if (error) {
@@ -122,6 +194,115 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       logDevError('auth.signOut', error)
       throw new Error(getErrorMessage(error, 'Could not sign out right now.'))
+    }
+  },
+
+  requestPasswordReset: async (email) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+
+      if (error) {
+        throw error
+      }
+    } catch (error) {
+      logDevError('auth.requestPasswordReset', error)
+      throw new Error(getErrorMessage(error, 'Could not send the password reset email.'))
+    }
+  },
+
+  updatePassword: async (password) => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password })
+
+      if (error) {
+        throw error
+      }
+    } catch (error) {
+      logDevError('auth.updatePassword', error)
+      throw new Error(getErrorMessage(error, 'Could not update your password.'))
+    }
+  },
+
+  resendSignupOtp: async (email) => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/verify-email`,
+        },
+      })
+
+      if (error) {
+        throw error
+      }
+    } catch (error) {
+      logDevError('auth.resendSignupOtp', error)
+      throw new Error(getErrorMessage(error, 'Could not resend the verification code.'))
+    }
+  },
+
+  verifyEmailOtp: async (email, token) => {
+    try {
+      await get().completeEmailVerification({
+        email,
+        token,
+        type: 'email',
+      })
+    } catch (error) {
+      logDevError('auth.verifyEmailOtp', error)
+      throw new Error(getErrorMessage(error, 'Could not verify that email code.'))
+    }
+  },
+
+  completeEmailVerification: async ({
+    accessToken,
+    refreshToken,
+    code,
+    tokenHash,
+    token,
+    email,
+    type,
+  }) => {
+    try {
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        })
+
+        if (error) {
+          throw error
+        }
+
+        await get().initialize()
+        return
+      }
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+        if (error) {
+          throw error
+        }
+
+        await get().initialize()
+        return
+      }
+
+      await verifyEmailChallenge({
+        email,
+        token,
+        tokenHash,
+        type,
+      })
+
+      await get().initialize()
+    } catch (error) {
+      logDevError('auth.completeEmailVerification', error)
+      throw new Error(getErrorMessage(error, 'Could not complete email verification.'))
     }
   },
 

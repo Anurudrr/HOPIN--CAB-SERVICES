@@ -1,5 +1,6 @@
 import { corsHeaders, errorResponse, HttpError, jsonResponse } from "../_shared/http.ts";
 import { createFunctionLogger } from "../_shared/observability.ts";
+import { enforcePublicFunctionRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
 import {
   parseNewsletterSubscriptionBody,
@@ -39,6 +40,15 @@ Deno.serve(async (request) => {
     });
 
     const serviceClient = createServiceClient();
+    await enforcePublicFunctionRateLimit({
+      request,
+      serviceClient,
+      logger,
+      scope: "subscribe-to-journal",
+      maxRequests: 12,
+      errorMessage: "Too many newsletter signup attempts from this IP. Please try again later.",
+    });
+
     const { data, error } = await serviceClient
       .from("newsletter_subscriptions")
       .insert({ email: payload.email })

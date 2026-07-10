@@ -89,7 +89,7 @@ export const routeStories = [
     body: "High repeat weekday demand, office clusters, and tight time windows make this corridor ideal for shared rides that still feel predictable.",
     stat: "1,920 weekly shared trips",
     image:
-      "https://images.unsplash.com/photo-1511649475669-e288648b2339?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1511649475669-e288648b2339?auto=format&fit=crop&q=80&w=800",
   },
   {
     city: "Mumbai",
@@ -97,7 +97,7 @@ export const routeStories = [
     body: "Longer distance commutes benefit from fare splitting the most. We bias toward stable corridors where each additional seat actually lowers the pain of traffic.",
     stat: "27% average savings",
     image:
-      "https://images.unsplash.com/photo-1598970434795-0c54fe7c0642?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1598970434795-0c54fe7c0642?auto=format&fit=crop&q=80&w=800",
   },
   {
     city: "Hyderabad",
@@ -105,7 +105,7 @@ export const routeStories = [
     body: "Dense tech campuses and late office hours let us stage reliable shared departures without adding unnecessary detours.",
     stat: "4.8 safety score",
     image:
-      "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&q=80&w=800",
   },
 ];
 
@@ -116,7 +116,7 @@ export const cityCards = [
     rides: "21k monthly riders",
     coverage: ["Indiranagar", "Koramangala", "Whitefield", "Manyata", "HSR"],
     image:
-      "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?auto=format&fit=crop&q=80&w=800",
   },
   {
     name: "Mumbai",
@@ -124,7 +124,7 @@ export const cityCards = [
     rides: "18k monthly riders",
     coverage: ["BKC", "Powai", "Andheri", "Worli", "Borivali"],
     image:
-      "https://images.unsplash.com/photo-1562979314-bee7453e911c?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1562979314-bee7453e911c?auto=format&fit=crop&q=80&w=800",
   },
   {
     name: "Delhi",
@@ -132,7 +132,7 @@ export const cityCards = [
     rides: "16k monthly riders",
     coverage: ["CP", "Saket", "Hauz Khas", "Dwarka", "Karol Bagh"],
     image:
-      "https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&q=80&w=800",
   },
   {
     name: "Hyderabad",
@@ -140,7 +140,7 @@ export const cityCards = [
     rides: "11k monthly riders",
     coverage: ["Gachibowli", "Hitech City", "Jubilee Hills", "Banjara Hills"],
     image:
-      "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&q=80&w=800",
   },
   {
     name: "Pune",
@@ -148,7 +148,7 @@ export const cityCards = [
     rides: "9k monthly riders",
     coverage: ["Hinjewadi", "Koregaon Park", "Viman Nagar", "Shivaji Nagar"],
     image:
-      "https://images.unsplash.com/photo-1566552881560-0be862a7c445?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1566552881560-0be862a7c445?auto=format&fit=crop&q=80&w=800",
   },
   {
     name: "Chennai",
@@ -156,7 +156,7 @@ export const cityCards = [
     rides: "launch requests open",
     coverage: ["OMR", "Guindy", "Velachery", "Anna Nagar"],
     image:
-      "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&q=80&w=800",
   },
 ];
 
@@ -265,7 +265,7 @@ export const blogPosts = [
     excerpt:
       "A shared ride network is only useful when the same routes become legible and repeatable. Scale without density creates noise, not reliability.",
     image:
-      "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&q=80&w=800",
   },
   {
     category: "Safety",
@@ -274,7 +274,7 @@ export const blogPosts = [
     excerpt:
       "Safety affordances need to be readable at a glance. We break down what should remain visible before pickup, during the ride, and at drop-off.",
     image:
-      "https://images.unsplash.com/photo-1519583272095-6433daf26b6e?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1519583272095-6433daf26b6e?auto=format&fit=crop&q=80&w=800",
   },
   {
     category: "Cities",
@@ -283,6 +283,6 @@ export const blogPosts = [
     excerpt:
       "Expansion is a routing problem before it is a marketing problem. We look for recurring demand, corridor symmetry, and pickup discipline.",
     image:
-      "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&q=80&w=800",
   },
 ];

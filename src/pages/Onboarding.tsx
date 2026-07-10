@@ -2,12 +2,12 @@ import * as React from "react";
 import { MapPin, Phone, UserCircle2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 import { Button } from "../components/ui/Button";
 import { supportedCities } from "../content/siteContent";
 import { updateProfile } from "../lib/api";
 import { getErrorMessage, logDevError } from "../lib/errors";
+import { toast } from "../lib/toast";
 import { useAuthStore } from "../store/useAuthStore";
 
 export default function Onboarding() {

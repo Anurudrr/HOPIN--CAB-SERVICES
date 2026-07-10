@@ -26,6 +26,7 @@ describe("API Integration: Rides", () => {
       {
         id: "ride-1",
         driver_id: "driver-1",
+        service_id: "service-1",
         origin_name: "Airport",
         origin_lat: 19.0876,
         origin_lng: 72.8194,
@@ -102,7 +103,7 @@ describe("API Integration: Bookings", () => {
       fare_total: 500,
       fare_shared: 250,
       seats: 2,
-      status: "confirmed",
+      status: "pending",
       created_at: new Date().toISOString(),
       departure_time: new Date().toISOString(),
       started_at: null,
@@ -127,16 +128,28 @@ describe("API Integration: Bookings", () => {
       }),
     );
 
-    const booking = await bookRide(
-      "ride-1",
-      2,
-      "Airport Terminal 1",
-      19.0876,
-      72.8194,
-      "Downtown",
-      19.076,
-      72.8777,
-    );
+    const booking = await bookRide({
+      rideId: "ride-1",
+      serviceId: "service-1",
+      seats: 2,
+      pickup: {
+        address: "Airport Terminal 1",
+        lat: 19.0876,
+        lng: 72.8194,
+      },
+      destination: {
+        address: "Downtown",
+        lat: 19.076,
+        lng: 72.8777,
+      },
+      fareTotal: 640,
+      subtotalAmount: 544,
+      platformFee: 52,
+      taxAmount: 44,
+      distanceKm: 18.5,
+      etaMinutes: 34,
+      specialInstructions: "Meet near Gate 3",
+    });
 
     expect(booking).toEqual(mockBookingResponse);
     expect(mockSupabaseClient.rpc).toHaveBeenCalledWith("book_ride", {
@@ -149,6 +162,14 @@ describe("API Integration: Bookings", () => {
       p_dest_address: "Downtown",
       p_dest_lat: 19.076,
       p_dest_lng: 72.8777,
+      p_service_id: "service-1",
+      p_fare_total: 640,
+      p_subtotal_amount: 544,
+      p_platform_fee: 52,
+      p_tax_amount: 44,
+      p_distance_km: 18.5,
+      p_eta_minutes: 34,
+      p_special_instructions: "Meet near Gate 3",
     });
   });
 
@@ -168,7 +189,7 @@ describe("API Integration: Bookings", () => {
       fare_total: 500,
       fare_shared: 250,
       seats: 1,
-      status: "confirmed",
+      status: "pending",
       created_at: new Date().toISOString(),
       departure_time: new Date().toISOString(),
       started_at: null,
@@ -193,7 +214,20 @@ describe("API Integration: Bookings", () => {
       }),
     );
 
-    const booking = await bookRide("ride-1", 1, "A", 19, 72, "B", 19.1, 72.1);
+    const booking = await bookRide({
+      rideId: "ride-1",
+      seats: 1,
+      pickup: {
+        address: "A",
+        lat: 19,
+        lng: 72,
+      },
+      destination: {
+        address: "B",
+        lat: 19.1,
+        lng: 72.1,
+      },
+    });
 
     expect(booking.driver_name).toBe("Jane Smith");
     expect(booking.vehicle_label).toContain("Honda City");
@@ -208,7 +242,22 @@ describe("API Integration: Bookings", () => {
       error: new Error("Insufficient seats available"),
     });
 
-    await expect(bookRide("ride-1", 10, "A", 19, 72, "B", 19.1, 72.1)).rejects.toThrow(
+    await expect(
+      bookRide({
+        rideId: "ride-1",
+        seats: 10,
+        pickup: {
+          address: "A",
+          lat: 19,
+          lng: 72,
+        },
+        destination: {
+          address: "B",
+          lat: 19.1,
+          lng: 72.1,
+        },
+      }),
+    ).rejects.toThrow(
       "Insufficient seats available",
     );
   });

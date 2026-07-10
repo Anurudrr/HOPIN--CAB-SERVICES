@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="apple-touch-icon" href="/pwa-192x192.svg" />
+    <link rel="icon" type="image/svg+xml" sizes="192x192" href="/pwa-192x192.svg" />
+    <link rel="icon" type="image/svg+xml" sizes="512x512" href="/pwa-512x512.svg" />
+    <meta name="theme-color" content="#050505" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#050505" media="(prefers-color-scheme: dark)" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,7 +21,6 @@
       name="description"
       content="HopIn helps people across Indian cities share rides, split fares, and move through dense urban corridors more efficiently."
     />
-    <meta name="theme-color" content="#050505" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://hopin-five.vercel.app" />
     <meta property="og:title" content="HopIn — Beat Traffic, Split the Fare" />
@@ -37,5 +41,12 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>

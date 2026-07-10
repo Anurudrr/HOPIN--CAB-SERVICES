@@ -11,6 +11,7 @@
 import { supabase } from './supabase'
 import { logDevError, mapApiErrorMessage, withRetry } from './errors'
 import type {
+  BackendJobRun,
   Booking,
   ContactMessage,
   ContactMessageInput,
@@ -22,6 +23,7 @@ import type {
   Ride,
   RideInput,
   RiderDashboardData,
+  SupportChatEvent,
 } from '../types'
 
 export interface SupportChatMessage {
@@ -32,6 +34,29 @@ export interface SupportChatMessage {
 interface AvailableRideRow extends Omit<Ride, 'driver' | 'vehicle'> {
   driver: Ride['driver'] | null
   vehicle: Ride['vehicle'] | null
+}
+
+export interface BookRideInput {
+  rideId: string
+  serviceId?: string | null
+  seats: number
+  pickup: {
+    address: string
+    lat: number
+    lng: number
+  }
+  destination: {
+    address: string
+    lat: number
+    lng: number
+  }
+  fareTotal?: number
+  subtotalAmount?: number
+  platformFee?: number
+  taxAmount?: number
+  distanceKm?: number
+  etaMinutes?: number
+  specialInstructions?: string
 }
 
 const rideSelect = `
@@ -294,30 +319,29 @@ export async function requestSupportChatReply(messages: SupportChatMessage[]): P
 /**
  * Book a ride
  */
-export async function bookRide(
-  rideId: string,
-  seats: number,
-  pickupAddress: string,
-  pickupLat: number,
-  pickupLng: number,
-  destAddress: string,
-  destLat: number,
-  destLng: number,
-): Promise<Booking> {
+export async function bookRide(input: BookRideInput): Promise<Booking> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated.')
 
   try {
     const { data: bookingId, error } = await supabase.rpc('book_ride', {
-      p_ride_id: rideId,
+      p_ride_id: input.rideId,
       p_rider_id: user.id,
-      p_seats: seats,
-      p_pickup_address: pickupAddress,
-      p_pickup_lat: pickupLat,
-      p_pickup_lng: pickupLng,
-      p_dest_address: destAddress,
-      p_dest_lat: destLat,
-      p_dest_lng: destLng,
+      p_seats: input.seats,
+      p_pickup_address: input.pickup.address,
+      p_pickup_lat: input.pickup.lat,
+      p_pickup_lng: input.pickup.lng,
+      p_dest_address: input.destination.address,
+      p_dest_lat: input.destination.lat,
+      p_dest_lng: input.destination.lng,
+      p_service_id: input.serviceId ?? null,
+      p_fare_total: input.fareTotal ?? null,
+      p_subtotal_amount: input.subtotalAmount ?? null,
+      p_platform_fee: input.platformFee ?? null,
+      p_tax_amount: input.taxAmount ?? null,
+      p_distance_km: input.distanceKm ?? null,
+      p_eta_minutes: input.etaMinutes ?? null,
+      p_special_instructions: input.specialInstructions?.trim() || null,
     })
 
     if (error) {
@@ -627,6 +651,58 @@ export async function getNewsletterSubscribers(): Promise<NewsletterSubscription
 }
 
 /**
+ * Load recent AI support chat audit rows for admins.
+ */
+export async function getSupportChatEvents(limit = 25): Promise<SupportChatEvent[]> {
+  try {
+    const { data, error } = await supabase
+      .from('support_chat_events')
+      .select('*, user:profiles(id,full_name,email)')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      logDevError('getSupportChatEvents', error)
+      throw new Error(mapApiErrorMessage(error, 'loading support chat events'))
+    }
+
+    return (data ?? []) as SupportChatEvent[]
+  } catch (error) {
+    logDevError('getSupportChatEvents', error)
+    throw error
+  }
+}
+
+/**
+ * Load recent backend job runs for admin observability.
+ */
+export async function getBackendJobRuns(limit = 20, jobName?: string): Promise<BackendJobRun[]> {
+  try {
+    let query = supabase
+      .from('backend_job_runs')
+      .select('*')
+      .order('started_at', { ascending: false })
+      .limit(limit)
+
+    if (jobName) {
+      query = query.eq('job_name', jobName)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      logDevError('getBackendJobRuns', error)
+      throw new Error(mapApiErrorMessage(error, 'loading backend job runs'))
+    }
+
+    return (data ?? []) as BackendJobRun[]
+  } catch (error) {
+    logDevError('getBackendJobRuns', error)
+    throw error
+  }
+}
+
+/**
  * Review a driver application as an admin
  */
 export async function reviewDriverApplication(
@@ -647,6 +723,43 @@ export async function reviewDriverApplication(
     return result.application
   } catch (error) {
     logDevError('reviewDriverApplication', error)
+    throw error
+  }
+}
+
+/**
+ * Upload a profile avatar into the public avatars storage bucket.
+ */
+export async function uploadAvatar(file: File): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated.')
+
+  const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const filePath = `${user.id}/avatar.${fileExtension}`
+
+  try {
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, {
+        contentType: file.type || 'image/jpeg',
+        upsert: true,
+      })
+
+    if (uploadError) {
+      logDevError('uploadAvatar', uploadError)
+      throw new Error(mapApiErrorMessage(uploadError, 'uploading avatar'))
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
+    const publicUrl = data?.publicUrl?.trim()
+
+    if (!publicUrl) {
+      throw new Error('Avatar uploaded, but no public URL was returned.')
+    }
+
+    return `${publicUrl}?t=${Date.now()}`
+  } catch (error) {
+    logDevError('uploadAvatar', error)
     throw error
   }
 }

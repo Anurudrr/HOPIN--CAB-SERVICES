@@ -1,14 +1,18 @@
 import * as React from 'react';
 import { Navigate } from 'react-router-dom';
 
+import type { AppRole } from '../../lib/roles';
+import { normalizeAppRole } from '../../lib/roles';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export function ProtectedRoute({
   children,
   requireOnboarding = false,
+  allowedRoles,
 }: {
   children: React.ReactNode;
   requireOnboarding?: boolean;
+  allowedRoles?: AppRole[];
 }) {
   const { user, profile, loading } = useAuthStore();
 
@@ -29,6 +33,10 @@ export function ProtectedRoute({
 
   if (requireOnboarding && !profile?.onboarding_completed) {
     return <Navigate to="/onboarding" replace />;
+  }
+
+  if (allowedRoles && profile && !allowedRoles.includes(normalizeAppRole(profile.role))) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

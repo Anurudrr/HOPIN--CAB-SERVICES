@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 
-import type { Profile, UserRole } from "../types";
+import { normalizeAppRole, type LegacyRole } from "../lib/roles";
+import type { Profile } from "../types";
 
 export interface ProfileRow {
   id: string;
@@ -8,7 +9,7 @@ export interface ProfileRow {
   phone: string | null;
   email: string | null;
   city: string | null;
-  role: UserRole | null;
+  role: LegacyRole;
   gender: string | null;
   home_address: string | null;
   work_address: string | null;
@@ -20,12 +21,8 @@ export interface ProfileRow {
   updated_at: string;
 }
 
-function normalizeRole(role: unknown): UserRole {
-  if (role === "driver" || role === "admin") {
-    return role
-  }
-
-  return "rider"
+export function normalizeRole(role: LegacyRole | string | null | undefined) {
+  return normalizeAppRole(role as LegacyRole);
 }
 
 export function buildProfile(row: ProfileRow | null, user: User | null): Profile | null {

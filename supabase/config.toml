@@ -14,3 +14,6 @@ verify_jwt = true
 
 [functions.expire-rides]
 verify_jwt = false
+
+[functions.notify-booking-confirmed]
+verify_jwt = false

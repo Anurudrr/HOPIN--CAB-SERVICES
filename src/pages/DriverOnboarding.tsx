@@ -2,11 +2,11 @@ import * as React from "react";
 import { CalendarDays, CarFront, FileText, ShieldCheck } from "lucide-react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 import { Button, ButtonLink } from "../components/ui/Button";
 import { submitDriverApplication } from "../lib/api";
 import { getErrorMessage, logDevError } from "../lib/errors";
+import { toast } from "../lib/toast";
 import {
   driverApplicationSchema,
   MAX_DRIVER_CAPACITY,

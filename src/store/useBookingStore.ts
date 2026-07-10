@@ -1,8 +1,9 @@
 import { create } from "zustand";
-import { toast } from "sonner";
 
 import type { SupportedCity } from "../lib/cities";
 import { bookRide, cancelBooking } from "../lib/api";
+import type { BookingQuote } from "../lib/quote";
+import { toast } from "../lib/toast";
 import type { Booking, Ride } from "../types";
 
 export interface Location {
@@ -14,10 +15,17 @@ export interface Location {
 
 export interface RideRequest {
   rideId: string;
+  serviceId?: string | null;
   pickup: Location;
   destination: Location;
   seats: number;
   fareEstimate: number;
+  subtotalAmount?: number;
+  platformFee?: number;
+  taxAmount?: number;
+  distanceKm?: number;
+  etaMinutes?: number;
+  specialInstructions?: string;
 }
 
 interface BookingState {
@@ -28,7 +36,11 @@ interface BookingState {
   bookingError: string | null;
   clearBookingError: () => void;
   selectRide: (ride: Ride | null) => void;
+  setPickup: (location: Location) => void;
+  setDestination: (location: Location) => void;
   setSeats: (n: number) => void;
+  setQuoteDetails: (quote: BookingQuote | null) => void;
+  setSpecialInstructions: (value: string) => void;
   startSearch: () => Promise<Booking | null>;
   cancelSearch: () => Promise<void>;
   reset: () => void;
@@ -84,16 +96,43 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       selectedRide: ride,
       currentRequest: {
         rideId: ride.id,
+        serviceId: ride.service_id ?? null,
         pickup: toRideLocation(ride, "origin"),
         destination: toRideLocation(ride, "destination"),
         seats,
         fareEstimate: ride.fare_per_seat * seats,
+        subtotalAmount: undefined,
+        platformFee: undefined,
+        taxAmount: undefined,
+        distanceKm: undefined,
+        etaMinutes: undefined,
+        specialInstructions: "",
       },
       activeRide: null,
       isSearching: false,
       bookingError: null,
     });
   },
+
+  setPickup: (location) =>
+    set((state) => ({
+      currentRequest: {
+        ...state.currentRequest,
+        pickup: location,
+      },
+      activeRide: null,
+      bookingError: null,
+    })),
+
+  setDestination: (location) =>
+    set((state) => ({
+      currentRequest: {
+        ...state.currentRequest,
+        destination: location,
+      },
+      activeRide: null,
+      bookingError: null,
+    })),
 
   setSeats: (n) => {
     set((state) => {
@@ -112,6 +151,54 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       };
     });
   },
+
+  setQuoteDetails: (quote) =>
+    set((state) => {
+      if (!quote) {
+        const {
+          subtotalAmount: _subtotalAmount,
+          platformFee: _platformFee,
+          taxAmount: _taxAmount,
+          distanceKm: _distanceKm,
+          etaMinutes: _etaMinutes,
+          ...rest
+        } = state.currentRequest;
+        const seatCount = clampSeats(
+          state.currentRequest.seats ?? 1,
+          state.selectedRide?.seats_available ?? 8,
+        );
+
+        return {
+          currentRequest: {
+            ...rest,
+            seats: seatCount,
+            fareEstimate: state.selectedRide
+              ? state.selectedRide.fare_per_seat * seatCount
+              : undefined,
+          },
+        };
+      }
+
+      return {
+        currentRequest: {
+          ...state.currentRequest,
+          fareEstimate: quote.total,
+          subtotalAmount: quote.subtotal,
+          platformFee: quote.platformFee,
+          taxAmount: quote.taxAmount,
+          distanceKm: quote.distanceKm,
+          etaMinutes: quote.durationMin,
+        },
+      };
+    }),
+
+  setSpecialInstructions: (value) =>
+    set((state) => ({
+      currentRequest: {
+        ...state.currentRequest,
+        specialInstructions: value,
+      },
+    })),
 
   startSearch: async () => {
     const { rideId, pickup, destination, seats } = get().currentRequest;
@@ -142,16 +229,28 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     set({ isSearching: true, bookingError: null });
 
     try {
-      const booking = await bookRide(
+      const booking = await bookRide({
         rideId,
-        seatCount,
-        pickup.address,
-        pickup.lat,
-        pickup.lng,
-        destination.address,
-        destination.lat,
-        destination.lng,
-      );
+        serviceId: selectedRide.service_id ?? get().currentRequest.serviceId ?? null,
+        seats: seatCount,
+        pickup: {
+          address: pickup.address,
+          lat: pickup.lat,
+          lng: pickup.lng,
+        },
+        destination: {
+          address: destination.address,
+          lat: destination.lat,
+          lng: destination.lng,
+        },
+        fareTotal: get().currentRequest.fareEstimate,
+        subtotalAmount: get().currentRequest.subtotalAmount,
+        platformFee: get().currentRequest.platformFee,
+        taxAmount: get().currentRequest.taxAmount,
+        distanceKm: get().currentRequest.distanceKm,
+        etaMinutes: get().currentRequest.etaMinutes,
+        specialInstructions: get().currentRequest.specialInstructions,
+      });
 
       set({
         activeRide: booking,

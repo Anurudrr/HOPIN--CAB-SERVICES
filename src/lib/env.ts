@@ -10,6 +10,10 @@ function validateEnv(key: string, value: unknown): string {
   return value;
 }
 
+function readOptionalEnv(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
 export const env = {
   SUPABASE_URL: validateEnv(
     'VITE_SUPABASE_URL',
@@ -19,6 +23,10 @@ export const env = {
     'VITE_SUPABASE_ANON_KEY',
     import.meta.env.VITE_SUPABASE_ANON_KEY
   ),
+  MAPBOX_ACCESS_TOKEN: typeof import.meta.env.VITE_MAPBOX_ACCESS_TOKEN === 'string'
+    ? import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+    : '',
+  SENTRY_DSN: readOptionalEnv(import.meta.env.VITE_SENTRY_DSN),
 } as const;
 
 export default env;

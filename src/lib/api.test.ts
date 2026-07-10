@@ -69,16 +69,28 @@ describe("api", () => {
     );
 
     await expect(
-      bookRide(
-        mockRide.id,
-        2,
-        mockRide.origin_name,
-        mockRide.origin_lat,
-        mockRide.origin_lng,
-        mockRide.destination_name,
-        mockRide.destination_lat,
-        mockRide.destination_lng,
-      ),
+      bookRide({
+        rideId: mockRide.id,
+        serviceId: mockRide.service_id,
+        seats: 2,
+        pickup: {
+          address: mockRide.origin_name,
+          lat: mockRide.origin_lat,
+          lng: mockRide.origin_lng,
+        },
+        destination: {
+          address: mockRide.destination_name,
+          lat: mockRide.destination_lat,
+          lng: mockRide.destination_lng,
+        },
+        fareTotal: 520,
+        subtotalAmount: 440,
+        platformFee: 48,
+        taxAmount: 32,
+        distanceKm: 11.4,
+        etaMinutes: 28,
+        specialInstructions: "Use the east gate",
+      }),
     ).resolves.toEqual(mockBooking);
   });
 

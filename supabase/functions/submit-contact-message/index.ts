@@ -1,5 +1,6 @@
 import { corsHeaders, errorResponse, HttpError, jsonResponse } from "../_shared/http.ts";
 import { createFunctionLogger } from "../_shared/observability.ts";
+import { enforcePublicFunctionRateLimit } from "../_shared/rateLimit.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
 import {
   parseContactMessageBody,
@@ -42,6 +43,15 @@ Deno.serve(async (request) => {
     });
 
     const serviceClient = createServiceClient();
+    await enforcePublicFunctionRateLimit({
+      request,
+      serviceClient,
+      logger,
+      scope: "submit-contact-message",
+      maxRequests: 5,
+      errorMessage: "Too many contact requests from this IP. Please try again later.",
+    });
+
     const { data, error } = await serviceClient
       .from("contact_messages")
       .insert({

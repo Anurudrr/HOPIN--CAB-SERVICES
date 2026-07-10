@@ -32,7 +32,7 @@ export const mockProfileRow: ProfileRow = {
 
 export const mockProfile: Profile = {
   ...mockProfileRow,
-  role: "rider",
+  role: "user",
   avatar_url: null,
   is_phone_verified: false,
   is_email_verified: true,
@@ -42,6 +42,7 @@ export const mockProfile: Profile = {
 export const mockRide: Ride = {
   id: "ride-123",
   driver_id: "driver-123",
+  service_id: "service-123",
   origin_name: "Indiranagar 100ft Rd, Bangalore",
   origin_lat: 12.9716,
   origin_lng: 77.6412,
@@ -75,6 +76,7 @@ export const mockRide: Ride = {
 export const mockBooking: Booking = {
   id: "booking-123",
   ride_id: "ride-123",
+  service_id: "service-123",
   rider_id: "user-123",
   driver_id: "driver-123",
   city: "Bangalore",
@@ -87,7 +89,7 @@ export const mockBooking: Booking = {
   fare_total: 360,
   fare_shared: 180,
   seats: 2,
-  status: "confirmed",
+  status: "pending",
   created_at: "2026-05-20T10:00:00.000Z",
   departure_time: mockRide.departure_time,
   started_at: null,
@@ -157,6 +159,12 @@ export const mockSupabaseClient = {
     signUp: vi.fn(),
     signInWithPassword: vi.fn(),
     signOut: vi.fn(),
+    resetPasswordForEmail: vi.fn(),
+    updateUser: vi.fn(),
+    resend: vi.fn(),
+    setSession: vi.fn(),
+    exchangeCodeForSession: vi.fn(),
+    verifyOtp: vi.fn(),
     onAuthStateChange: vi.fn(() => ({
       data: {
         subscription: {
@@ -173,6 +181,9 @@ export const mockSupabaseClient = {
   storage: {
     from: vi.fn(() => ({
       upload: vi.fn().mockResolvedValue({ error: null }),
+      getPublicUrl: vi.fn(() => ({
+        data: { publicUrl: "https://example.com/avatar.png" },
+      })),
     })),
   },
   channel: vi.fn(() => createRealtimeChannel()),
@@ -191,11 +202,23 @@ export function resetMockSupabase() {
   mockSupabaseClient.auth.signUp.mockResolvedValue({ error: null });
   mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({ error: null });
   mockSupabaseClient.auth.signOut.mockResolvedValue({ error: null });
+  mockSupabaseClient.auth.resetPasswordForEmail.mockResolvedValue({ error: null });
+  mockSupabaseClient.auth.updateUser.mockResolvedValue({ error: null });
+  mockSupabaseClient.auth.resend.mockResolvedValue({ error: null });
+  mockSupabaseClient.auth.setSession.mockResolvedValue({ data: { session: null }, error: null });
+  mockSupabaseClient.auth.exchangeCodeForSession.mockResolvedValue({
+    data: { session: null, user: mockAuthUser },
+    error: null,
+  });
+  mockSupabaseClient.auth.verifyOtp.mockResolvedValue({ error: null });
   mockSupabaseClient.functions.invoke.mockResolvedValue({ data: null, error: null });
   mockSupabaseClient.rpc.mockResolvedValue({ data: null, error: null });
   mockSupabaseClient.from.mockImplementation(() => createQueryBuilder({ data: null, error: null }));
   mockSupabaseClient.storage.from.mockImplementation(() => ({
     upload: vi.fn().mockResolvedValue({ error: null }),
+    getPublicUrl: vi.fn(() => ({
+      data: { publicUrl: "https://example.com/avatar.png" },
+    })),
   }));
   mockSupabaseClient.channel.mockImplementation(() => createRealtimeChannel());
   mockSupabaseClient.removeChannel.mockResolvedValue(undefined);
