@@ -1,6 +1,6 @@
 # HopIn
 
-HopIn is a shared urban mobility web app for Indian cities. The frontend is built with React 19, Vite, TypeScript, Zustand, Motion for React, React Leaflet, and Tailwind CSS v4. The backend runs on Supabase Postgres, RLS policies, RPCs, and Edge Functions, so the app can deploy cleanly on Vercel without a separate long-lived Node API service.
+HopIn is a shared urban mobility web app for Indian cities. The frontend is built with React 19, Vite, TypeScript, Zustand, Motion for React, React Leaflet, and Tailwind CSS v4. The backend runs on Supabase Postgres, RLS policies, RPCs, and Edge Functions, so the app can deploy cleanly on Vercel without a separate long-lived Node API serviceS.
 
 ## Tech Stack
 
