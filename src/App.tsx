@@ -7,6 +7,7 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { MainLayout } from "./components/layout/MainLayout";
 import { RouteLoader } from "./components/site/RouteLoader";
 import { useAuthStore } from "./store/useAuthStore";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const About = lazy(() => import("./pages/About"));
 const Admin = lazy(() => import("./pages/Admin"));
@@ -30,6 +31,65 @@ const Safety = lazy(() => import("./pages/Safety"));
 const Terms = lazy(() => import("./pages/Terms"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 
+interface ErrorFallbackProps {
+  error?: Error;
+  resetErrorBoundary?: () => void;
+}
+
+function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
+  return (
+    <ErrorBoundary
+      error={error}
+      resetErrorBoundary={resetErrorBoundary}
+      fallback={
+        <div className="min-h-screen flex flex-col items-center justify-center bg-white border-b-2 border-black px-4 py-8">
+          <div className="max-w-md text-center">
+            <div className="mb-8">
+              <div className="inline-flex h-16 w-16 items-center justify-center border-2 border-black bg-black text-white font-black text-2xl">
+                !
+              </div>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-4 text-black border-b-2 border-black pb-4">
+              Error
+            </h1>
+            <p className="text-lg text-black font-medium mb-2">
+              {error?.message || 'Something went wrong'}
+            </p>
+            {import.meta.env.DEV && error?.stack && (
+              <details className="mt-4 text-left">
+                <summary className="cursor-pointer text-sm font-mono text-gray-600 hover:text-black">
+                  Stack trace (dev only)
+                </summary>
+                <pre className="mt-2 overflow-auto bg-gray-100 p-2 text-xs border border-gray-300 rounded">
+                  {error.stack}
+                </pre>
+              </details>
+            )}
+            <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={resetErrorBoundary}
+                className="flex-1 px-6 py-3 bg-black text-white font-bold uppercase tracking-widest text-sm border-2 border-black hover:bg-white hover:text-black transition-colors shadow-soft"
+                aria-label="Retry"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="flex-1 px-6 py-3 bg-white text-black font-bold uppercase tracking-widest text-sm border-2 border-black hover:bg-black hover:text-white transition-colors shadow-soft"
+                aria-label="Go home"
+              >
+                Go Home
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <div />
+    </ErrorBoundary>
+  );
+}
+
 function AppRoutes() {
   const loading = useAuthStore((state) => state.loading);
 
@@ -45,8 +105,8 @@ function AppRoutes() {
     <Suspense fallback={<RouteLoader />}>
       <Routes>
         <Route element={<MainLayout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
+          <Route path="/" element={<Home />} errorElement={<ErrorFallback />} />
+          <Route path="/about" element={<About />} errorElement={<ErrorFallback />} />
           <Route
             path="/admin"
             element={
@@ -54,20 +114,21 @@ function AppRoutes() {
                 <Admin />
               </ProtectedRoute>
             }
+            errorElement={<ErrorFallback />}
           />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/careers" element={<Careers />} />
-          <Route path="/cities" element={<Cities />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/safety" element={<Safety />} />
-          <Route path="/terms" element={<Terms />} />
+          <Route path="/blog" element={<Blog />} errorElement={<ErrorFallback />} />
+          <Route path="/careers" element={<Careers />} errorElement={<ErrorFallback />} />
+          <Route path="/cities" element={<Cities />} errorElement={<ErrorFallback />} />
+          <Route path="/contact" element={<Contact />} errorElement={<ErrorFallback />} />
+          <Route path="/faq" element={<FAQ />} errorElement={<ErrorFallback />} />
+          <Route path="/privacy" element={<Privacy />} errorElement={<ErrorFallback />} />
+          <Route path="/safety" element={<Safety />} errorElement={<ErrorFallback />} />
+          <Route path="/terms" element={<Terms />} errorElement={<ErrorFallback />} />
           <Route path="/auth" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Auth />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/login" element={<Auth />} errorElement={<ErrorFallback />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} errorElement={<ErrorFallback />} />
+          <Route path="/reset-password" element={<ResetPassword />} errorElement={<ErrorFallback />} />
+          <Route path="/verify-email" element={<VerifyEmail />} errorElement={<ErrorFallback />} />
           <Route
             path="/book"
             element={
@@ -75,6 +136,7 @@ function AppRoutes() {
                 <Booking />
               </ProtectedRoute>
             }
+            errorElement={<ErrorFallback />}
           />
           <Route
             path="/dashboard"
@@ -83,6 +145,7 @@ function AppRoutes() {
                 <Dashboard />
               </ProtectedRoute>
             }
+            errorElement={<ErrorFallback />}
           />
           <Route
             path="/driver-signup"
@@ -91,6 +154,7 @@ function AppRoutes() {
                 <DriverOnboarding />
               </ProtectedRoute>
             }
+            errorElement={<ErrorFallback />}
           />
           <Route
             path="/provider-signup"
@@ -103,6 +167,7 @@ function AppRoutes() {
                 <Onboarding />
               </ProtectedRoute>
             }
+            errorElement={<ErrorFallback />}
           />
           <Route
             path="/profile"
@@ -111,8 +176,9 @@ function AppRoutes() {
                 <Profile />
               </ProtectedRoute>
             }
+            errorElement={<ErrorFallback />}
           />
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<NotFound />} errorElement={<ErrorFallback />} />
         </Route>
       </Routes>
     </Suspense>

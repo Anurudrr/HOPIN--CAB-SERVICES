@@ -1,5 +1,6 @@
 import { ArrowRight, CheckCircle2, Clock3, MapPin } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useInView, useReducedMotion } from "motion/react";
+import * as React from "react";
 
 import { supportedCities } from "../content/siteContent";
 import { ButtonLink } from "./ui/Button";
@@ -10,11 +11,37 @@ const rideSignals = [
   "Switch cities to compare live inventory instead of simulated matches",
 ];
 
+const cardVariants = {
+  hidden: { opacity: 0, y: 18 },
+  visible: (idx: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.55,
+      delay: idx * 0.07,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  }),
+};
+
 const LiveBooking = () => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const isInView = useInView(containerRef, { once: true, amount: 0.2 });
+  const shouldReduceMotion = useReducedMotion();
+
   return (
-    <section id="network" className="relative overflow-hidden border-b-2 border-black bg-white py-32">
+    <section
+      id="network"
+      className="relative overflow-hidden border-b-2 border-black bg-white py-32"
+    >
       <div className="mx-auto grid max-w-7xl gap-16 px-4 sm:px-6 lg:grid-cols-[1fr_0.95fr] lg:px-8">
-        <div className="flex flex-col justify-center">
+        <motion.div
+          ref={containerRef}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
+          animate={isInView ? { opacity: 1, y: 0 } : undefined}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col justify-center"
+        >
           <p className="mb-4 text-xs font-bold uppercase tracking-[0.34em] text-black/50">
             Live booking surface
           </p>
@@ -29,22 +56,33 @@ const LiveBooking = () => {
           </p>
 
           <div className="mb-10 flex flex-wrap gap-3">
-            {supportedCities.map((city) => (
-              <span key={city} className="route-chip border-black bg-white text-black shadow-soft">
+            {supportedCities.map((city, idx) => (
+              <motion.span
+                key={city}
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={isInView ? { opacity: 1, scale: 1 } : undefined}
+                transition={{ delay: 0.2 + idx * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                whileHover={{ y: -2 }}
+                className="route-chip border-black bg-white text-black shadow-soft"
+              >
                 {city}
-              </span>
+              </motion.span>
             ))}
           </div>
 
           <div className="space-y-4">
-            {rideSignals.map((signal) => (
-              <div
+            {rideSignals.map((signal, idx) => (
+              <motion.div
                 key={signal}
+                custom={idx}
+                variants={cardVariants}
+                initial="hidden"
+                animate={isInView ? "visible" : "hidden"}
                 className="flex items-start gap-4 border-l-4 border-black pl-4 text-base font-medium text-black"
               >
                 <CheckCircle2 className="mt-0.5 shrink-0" size={20} />
                 <span>{signal}</span>
-              </div>
+              </motion.div>
             ))}
           </div>
 
@@ -57,13 +95,12 @@ const LiveBooking = () => {
               Explore City Coverage
             </ButtonLink>
           </div>
-        </div>
+        </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.25 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 28 }}
+          animate={isInView ? { opacity: 1, y: 0 } : undefined}
+          transition={{ duration: 0.7, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
           className="relative overflow-hidden border-4 border-black bg-white p-8 shadow-premium"
         >
           <div
@@ -90,8 +127,20 @@ const LiveBooking = () => {
               </div>
             </div>
 
-            <div className="grid gap-4">
-              <div className="border-2 border-black bg-black p-5 text-white shadow-soft">
+            <motion.div
+              initial="hidden"
+              animate={isInView ? "visible" : "hidden"}
+              variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.1, delayChildren: 0.4 } },
+              }}
+              className="grid gap-4"
+            >
+              <motion.div
+                variants={cardVariants}
+                custom={0}
+                className="border-2 border-black bg-black p-5 text-white shadow-soft"
+              >
                 <div className="flex items-center gap-3">
                   <MapPin size={18} />
                   <p className="text-sm font-bold uppercase tracking-[0.22em]">
@@ -101,10 +150,14 @@ const LiveBooking = () => {
                 <p className="mt-3 text-base text-white/80">
                   Pickup corridor, destination corridor, and city-specific inventory.
                 </p>
-              </div>
+              </motion.div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="border-2 border-black bg-white p-5 shadow-soft">
+                <motion.div
+                  variants={cardVariants}
+                  custom={1}
+                  className="border-2 border-black bg-white p-5 shadow-soft"
+                >
                   <div className="flex items-center gap-3">
                     <Clock3 size={18} />
                     <p className="text-sm font-bold uppercase tracking-[0.22em] text-black">
@@ -114,8 +167,12 @@ const LiveBooking = () => {
                   <p className="mt-3 text-sm font-medium leading-7 text-black/72">
                     Riders see when the route actually leaves instead of a made-up ETA.
                   </p>
-                </div>
-                <div className="border-2 border-black bg-white p-5 shadow-soft">
+                </motion.div>
+                <motion.div
+                  variants={cardVariants}
+                  custom={2}
+                  className="border-2 border-black bg-white p-5 shadow-soft"
+                >
                   <div className="flex items-center gap-3">
                     <CheckCircle2 size={18} />
                     <p className="text-sm font-bold uppercase tracking-[0.22em] text-black">
@@ -125,10 +182,14 @@ const LiveBooking = () => {
                   <p className="mt-3 text-sm font-medium leading-7 text-black/72">
                     Seat count and fare totals update from the selected ride.
                   </p>
-                </div>
+                </motion.div>
               </div>
 
-              <div className="border-2 border-black bg-white p-5 shadow-soft">
+              <motion.div
+                variants={cardVariants}
+                custom={3}
+                className="border-2 border-black bg-white p-5 shadow-soft"
+              >
                 <p className="text-xs font-bold uppercase tracking-[0.28em] text-black/55">
                   Why this changed
                 </p>
@@ -136,8 +197,8 @@ const LiveBooking = () => {
                   The homepage should route people into the real booking experience, not a demo that
                   pretends to search.
                 </p>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
         </motion.div>
       </div>

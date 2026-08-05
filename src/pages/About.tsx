@@ -2,7 +2,10 @@ import { ArrowRight, Compass, Leaf, ShieldCheck, Users } from "lucide-react";
 
 import { Reveal } from "../components/site/Reveal";
 import { SectionHeading } from "../components/site/SectionHeading";
+import { MagneticWrap } from "../components/site/MagneticWrap";
+import { NumberTicker } from "../components/site/NumberTicker";
 import { ButtonLink } from "../components/ui/Button";
+import { SectionRule } from "../components/ui/SectionRule";
 import { manifestoPillars, networkMetrics } from "../content/siteContent";
 
 const timeline = [
@@ -63,19 +66,31 @@ export default function About() {
           />
 
           <div className="grid gap-4 md:grid-cols-4">
-            {networkMetrics.map((metric, index) => (
-              <Reveal key={metric.label} delay={index * 0.05} className="panel p-6">
-                <p className="text-3xl font-black uppercase tracking-tight text-black">
-                  {metric.value}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-black/60">
-                  {metric.label}
-                </p>
-              </Reveal>
-            ))}
+            {networkMetrics.map((metric, index) => {
+              const match = metric.value.match(/^(\d+(?:\.\d+)?)(.*)$/);
+              const numericValue = match ? Number(match[1]) : null;
+              const suffix = match ? match[2] : metric.value;
+
+              return (
+                <Reveal key={metric.label} delay={index * 0.05} className="panel p-6">
+                  <p className="text-3xl font-black uppercase tracking-tight text-black">
+                    {numericValue !== null ? (
+                      <NumberTicker value={numericValue} suffix={suffix} />
+                    ) : (
+                      metric.value
+                    )}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-black/60">
+                    {metric.label}
+                  </p>
+                </Reveal>
+              );
+            })}
           </div>
         </div>
       </section>
+
+      <div className="section-frame"><SectionRule /></div>
 
       <section className="section-shell">
         <div className="section-frame space-y-12">
@@ -175,10 +190,12 @@ export default function About() {
               </h3>
             </div>
             <div className="flex flex-col gap-4 sm:flex-row">
-              <ButtonLink to="/safety" size="lg" className="gap-2">
-                Safety Architecture
-                <ArrowRight size={16} />
-              </ButtonLink>
+              <MagneticWrap strength={0.18}>
+                <ButtonLink to="/safety" size="lg" className="gap-2">
+                  Safety Architecture
+                  <ArrowRight size={16} />
+                </ButtonLink>
+              </MagneticWrap>
               <ButtonLink to="/contact" variant="outline" size="lg">
                 Contact HopIn
               </ButtonLink>

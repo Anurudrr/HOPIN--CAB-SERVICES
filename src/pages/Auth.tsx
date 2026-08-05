@@ -6,6 +6,7 @@ import { ArrowRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 
 import { AuthShell } from '../components/auth/AuthShell';
+import { MagneticWrap } from '../components/site/MagneticWrap';
 import { ButtonLink } from '../components/ui/Button';
 import { mapAuthErrorMessage } from '../lib/errors';
 import { signInSchema, signUpSchema } from '../lib/validation';
@@ -181,20 +182,22 @@ const Auth = () => {
                   ) : null}
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="mt-8 flex w-full items-center justify-center border-2 border-black bg-black px-4 py-5 font-bold uppercase tracking-widest text-white shadow-soft transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isLoading ? 'SIGNING IN...' : 'SIGN IN'}
-                  {!isLoading ? (
-                    <ArrowRight
-                      size={20}
-                      strokeWidth={2.5}
-                      className="ml-3 transition-transform group-hover:translate-x-2"
-                    />
-                  ) : null}
-                </button>
+                <MagneticWrap strength={0.15}>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="mt-8 flex w-full items-center justify-center border-2 border-black bg-black px-4 py-5 font-bold uppercase tracking-widest text-white shadow-soft transition-all duration-200 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:bg-white hover:text-black hover:shadow-premium active:translate-x-0 active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {isLoading ? 'SIGNING IN...' : 'SIGN IN'}
+                    {!isLoading ? (
+                      <ArrowRight
+                        size={20}
+                        strokeWidth={2.5}
+                        className="ml-3 transition-transform group-hover:translate-x-2"
+                      />
+                    ) : null}
+                  </button>
+                </MagneticWrap>
               </motion.form>
             ) : (
               <motion.form
@@ -274,20 +277,22 @@ const Auth = () => {
                   ) : null}
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="mt-8 flex w-full items-center justify-center border-2 border-black bg-black px-4 py-5 font-bold uppercase tracking-widest text-white shadow-soft transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isLoading ? 'CREATING...' : 'CREATE ACCOUNT'}
-                  {!isLoading ? (
-                    <ArrowRight
-                      size={20}
-                      strokeWidth={2.5}
-                      className="ml-3 transition-transform group-hover:translate-x-2"
-                    />
-                  ) : null}
-                </button>
+                <MagneticWrap strength={0.15}>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="mt-8 flex w-full items-center justify-center border-2 border-black bg-black px-4 py-5 font-bold uppercase tracking-widest text-white shadow-soft transition-all duration-200 hover:-translate-x-[2px] hover:-translate-y-[2px] hover:bg-white hover:text-black hover:shadow-premium active:translate-x-0 active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {isLoading ? 'CREATING...' : 'CREATE ACCOUNT'}
+                    {!isLoading ? (
+                      <ArrowRight
+                        size={20}
+                        strokeWidth={2.5}
+                        className="ml-3 transition-transform group-hover:translate-x-2"
+                      />
+                    ) : null}
+                  </button>
+                </MagneticWrap>
               </motion.form>
             )}
           </AnimatePresence>

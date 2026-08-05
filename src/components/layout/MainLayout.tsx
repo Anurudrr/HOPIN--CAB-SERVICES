@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Outlet, useLocation } from "react-router-dom";
 
 import { PageMeta } from "../site/PageMeta";
+import { ScrollProgress } from "../site/ScrollProgress";
 import { Footer } from "./Footer";
 import { Navbar } from "./Navbar";
 
@@ -157,13 +158,14 @@ export const MainLayout = () => {
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
+      <ScrollProgress />
       <Navbar compact={isProductFlow} />
       <main
         id="main-content"
         tabIndex={-1}
         className={isProductFlow ? "flex-grow pt-24" : "flex-grow pt-20"}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={`${pathname}${hash}`}
             initial={shouldReduceMotion ? false : { opacity: 0, y: 14 }}
@@ -172,7 +174,7 @@ export const MainLayout = () => {
             transition={
               shouldReduceMotion
                 ? { duration: 0 }
-                : { duration: 0.35, ease: [0.22, 1, 0.36, 1] }
+                : { duration: 0.42, ease: [0.22, 1, 0.36, 1] }
             }
           >
             <Outlet />

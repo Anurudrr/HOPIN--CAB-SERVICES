@@ -1,11 +1,25 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap");
 @import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", "Times New Roman", serif;
   --shadow-soft: 4px 4px 0 0 rgba(0, 0, 0, 1);
   --shadow-premium: 8px 8px 0 0 rgba(0, 0, 0, 1);
+  --shadow-deep: 12px 12px 0 0 rgba(0, 0, 0, 1);
+
+  /* Motion tokens — used by JS for framer + CSS for utility classes */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --dur-instant: 80ms;
+  --dur-fast: 160ms;
+  --dur-base: 280ms;
+  --dur-slow: 520ms;
+  --dur-slower: 820ms;
 }
 
 @layer base {
@@ -22,6 +36,18 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Noise overlay — softens flat whites, gives the brutalist system a printed-paper texture */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.035;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.85'/></svg>");
+  }
+
   ::selection {
     background: #000000;
     color: #ffffff;
@@ -33,15 +59,26 @@
   textarea,
   select {
     transition:
-      color 160ms ease,
-      border-color 160ms ease,
-      background-color 160ms ease,
-      box-shadow 160ms ease,
-      transform 160ms ease;
+      color var(--dur-fast) var(--ease-out-expo),
+      border-color var(--dur-fast) var(--ease-out-expo),
+      background-color var(--dur-fast) var(--ease-out-expo),
+      box-shadow var(--dur-fast) var(--ease-out-expo),
+      transform var(--dur-fast) var(--ease-out-expo);
   }
 
   textarea {
     resize: vertical;
+  }
+
+  /* Headings lean on the display face — Manrope, tighter than Inter */
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+
+  .serif-accent,
+  [data-serif] {
+    font-family: var(--font-serif);
   }
 
   * {
@@ -55,6 +92,11 @@
 
   *::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.24);
+    transition: background var(--dur-fast) var(--ease-out-expo);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.55);
   }
 
   *::-webkit-scrollbar-track {
@@ -78,10 +120,19 @@
     max-width: 80rem;
   }
 
+  /* Panel — base brutalist card with hover lift built in */
   .panel {
     border: 2px solid #000000;
     background: #ffffff;
     box-shadow: var(--shadow-soft);
+    transition:
+      transform var(--dur-base) var(--ease-out-expo),
+      box-shadow var(--dur-base) var(--ease-out-expo);
+  }
+
+  .panel:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-premium);
   }
 
   .panel-dark {
@@ -89,6 +140,27 @@
     background: #000000;
     color: #ffffff;
     box-shadow: var(--shadow-premium);
+    transition:
+      transform var(--dur-base) var(--ease-out-expo),
+      box-shadow var(--dur-base) var(--ease-out-expo);
+  }
+
+  .panel-dark:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-deep);
+  }
+
+  .panel-flat {
+    border: 2px solid #000000;
+    background: #ffffff;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .panel-flat-dark {
+    border: 2px solid #000000;
+    background: #000000;
+    color: #ffffff;
+    box-shadow: var(--shadow-soft);
   }
 
   .route-chip {
@@ -105,6 +177,22 @@
     text-transform: uppercase;
     color: #000000;
     box-shadow: var(--shadow-soft);
+    transition:
+      transform var(--dur-fast) var(--ease-out-expo),
+      box-shadow var(--dur-fast) var(--ease-out-expo),
+      background-color var(--dur-fast) var(--ease-out-expo),
+      color var(--dur-fast) var(--ease-out-expo);
+  }
+
+  .route-chip:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: var(--shadow-premium);
+  }
+
+  .route-chip[data-active="true"] {
+    background: #000000;
+    color: #ffffff;
+    box-shadow: var(--shadow-premium);
   }
 
   .eyebrow {
@@ -113,13 +201,6 @@
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: #000000;
-  }
-
-  .serif-accent {
-    font-family: var(--font-sans);
-    font-style: normal;
-    font-weight: 900;
-    text-transform: uppercase;
   }
 
   .field-shell,
@@ -132,6 +213,9 @@
     color: #000000;
     box-shadow: var(--shadow-soft);
     outline: none;
+    transition:
+      box-shadow var(--dur-base) var(--ease-out-expo),
+      transform var(--dur-base) var(--ease-out-expo);
   }
 
   .field-shell::placeholder,
@@ -143,6 +227,7 @@
   .field-shell-lg:focus {
     border-color: #000000;
     box-shadow: var(--shadow-premium);
+    transform: translate(-1px, -1px);
   }
 
   .field-shell-lg {
@@ -170,6 +255,115 @@
     transform: translateY(0);
     outline: 2px solid #000000;
     outline-offset: 2px;
+  }
+
+  /* Skeleton shimmer — replaces static animate-pulse for brutalist consistency */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(0, 0, 0, 0.18) 50%,
+      transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: shimmer-slide 1.4s var(--ease-in-out-quart) infinite;
+  }
+
+  @keyframes shimmer-slide {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Breathing live dot — used wherever we show "real-time" data */
+  .live-dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    background: #000000;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .live-dot::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 9999px;
+    border: 2px solid #000000;
+    opacity: 0.4;
+    animation: live-pulse 1.8s var(--ease-out-expo) infinite;
+  }
+
+  @keyframes live-pulse {
+    0% { transform: scale(0.6); opacity: 0.6; }
+    70% { transform: scale(1.4); opacity: 0; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+
+  /* Section rule that draws in from center on scroll (handled by class toggle in JS) */
+  .section-rule {
+    position: relative;
+    height: 2px;
+    background: #000000;
+    transform-origin: center;
+    transform: scaleX(0);
+    transition: transform var(--dur-slower) var(--ease-out-expo);
+  }
+
+  .section-rule[data-drawn="true"] {
+    transform: scaleX(1);
+  }
+
+  /* Marquee — used for city ticker strip */
+  .marquee {
+    display: flex;
+    overflow: hidden;
+    user-select: none;
+    gap: 3rem;
+  }
+
+  .marquee-track {
+    display: flex;
+    gap: 3rem;
+    animation: marquee 38s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* Hero grid drift — subtle parallax-ish movement on the bg grid */
+  .hero-grid-drift {
+    animation: grid-drift 24s ease-in-out infinite;
+  }
+
+  @keyframes grid-drift {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(-12px, -8px, 0); }
+  }
+
+  /* Draw-in line — used for map route animation */
+  .draw-line {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    transition: stroke-dashoffset 1.6s var(--ease-out-expo);
+  }
+
+  .draw-line[data-drawn="true"] {
+    stroke-dashoffset: 0;
   }
 }
 
@@ -226,5 +420,9 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  body::before {
+    opacity: 0.02;
   }
 }

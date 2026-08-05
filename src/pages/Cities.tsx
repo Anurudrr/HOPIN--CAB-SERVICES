@@ -2,8 +2,10 @@ import { ArrowRight, Radar, Route, TimerReset } from "lucide-react";
 
 import { Reveal } from "../components/site/Reveal";
 import { SectionHeading } from "../components/site/SectionHeading";
+import { MagneticWrap } from "../components/site/MagneticWrap";
 import { ButtonLink } from "../components/ui/Button";
 import { OptimizedImage } from "../components/ui/OptimizedImage";
+import { SectionRule } from "../components/ui/SectionRule";
 import { cityCards } from "../content/siteContent";
 
 const rolloutSteps = [
@@ -148,9 +150,11 @@ export default function Cities() {
             </div>
 
             <div className="flex flex-col gap-4 sm:flex-row">
-              <ButtonLink to="/contact?topic=expansion" size="lg">
-                Request a City
-              </ButtonLink>
+              <MagneticWrap strength={0.18}>
+                <ButtonLink to="/contact?topic=expansion" size="lg">
+                  Request a City
+                </ButtonLink>
+              </MagneticWrap>
               <ButtonLink to="/about" variant="outline" size="lg">
                 Read the Manifesto
               </ButtonLink>

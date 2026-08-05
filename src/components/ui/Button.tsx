@@ -14,9 +14,9 @@ interface ButtonStyleProps {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "border-2 border-black bg-black text-white shadow-soft hover:bg-white hover:text-black hover:shadow-premium",
+    "border-2 border-black bg-black text-white shadow-soft hover:bg-white hover:text-black hover:shadow-premium hover:-translate-x-[2px] hover:-translate-y-[2px]",
   outline:
-    "border-2 border-black bg-white text-black shadow-soft hover:bg-black hover:text-white hover:shadow-premium",
+    "border-2 border-black bg-white text-black shadow-soft hover:bg-black hover:text-white hover:shadow-premium hover:-translate-x-[2px] hover:-translate-y-[2px]",
   ghost:
     "border-2 border-transparent bg-transparent text-black hover:border-black hover:bg-black hover:text-white",
 };
@@ -33,7 +33,7 @@ export function buttonStyles({
   variant = "primary",
 }: ButtonStyleProps = {}) {
   return cn(
-    "inline-flex items-center justify-center rounded-none font-black uppercase tracking-[0.22em] text-[11px] transition-colors motion-safe:hover:-translate-y-0.5 motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 disabled:motion-safe:hover:translate-y-0 disabled:motion-safe:active:scale-100",
+    "relative inline-flex items-center justify-center rounded-none font-black uppercase tracking-[0.22em] text-[11px] transition-[transform,box-shadow,background-color,color] duration-200 ease-out active:translate-x-0 active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50",
     variants[variant],
     sizes[size],
     className,

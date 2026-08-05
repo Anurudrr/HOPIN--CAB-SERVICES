@@ -7,10 +7,12 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 
 import { supportedCities } from "../content/siteContent";
+import { BreathingDot } from "./ui/BreathingDot";
 import { cn } from "../lib/utils";
+import { MagneticWrap } from "./site/MagneticWrap";
 import { ButtonLink } from "./ui/Button";
 
 type City = (typeof supportedCities)[number];
@@ -87,6 +89,26 @@ const cityPreviewContent: Record<
   },
 };
 
+const headlineContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+};
+
+const headlineLine = {
+  hidden: { opacity: 0, y: 28, clipPath: "inset(0 0 100% 0)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    clipPath: "inset(0 0 0% 0)",
+    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+const staggerChild = {
+  hidden: { opacity: 0, y: 14 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] } },
+};
+
 const Hero = () => {
   const [selectedCity, setSelectedCity] = React.useState<City>(supportedCities[0]);
   const preview = cityPreviewContent[selectedCity];
@@ -94,7 +116,7 @@ const Hero = () => {
   return (
     <section className="relative overflow-hidden border-b-2 border-black bg-white pb-20 pt-28 md:pb-28 md:pt-36">
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.05]"
+        className="hero-grid-drift pointer-events-none absolute inset-0 opacity-[0.05]"
         style={{
           backgroundImage:
             "linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)",
@@ -107,36 +129,49 @@ const Hero = () => {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.92fr)] xl:gap-16">
           <motion.div
-            initial={{ opacity: 0, y: 28 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            initial="hidden"
+            animate="visible"
+            variants={headlineContainer}
             className="max-w-2xl"
           >
-            <div className="inline-flex items-center gap-3 border-2 border-black bg-white px-4 py-2 shadow-soft">
-              <span className="h-2.5 w-2.5 rounded-full bg-black" />
-              <span className="text-xs font-black uppercase tracking-[0.28em] text-black">
-                Live booking surface
-              </span>
-            </div>
+            <motion.div
+              variants={staggerChild}
+              className="inline-flex items-center gap-3 border-2 border-black bg-white px-4 py-2 shadow-soft"
+            >
+              <BreathingDot label="Live booking surface" />
+            </motion.div>
 
-            <p className="mt-7 text-xs font-black uppercase tracking-[0.28em] text-black/50">
+            <motion.p
+              variants={staggerChild}
+              className="mt-7 text-xs font-black uppercase tracking-[0.28em] text-black/50"
+            >
               Shared city mobility
-            </p>
+            </motion.p>
 
-            <h1 className="mt-4 text-5xl font-black uppercase leading-[0.92] tracking-tighter text-black md:text-7xl lg:text-[5.8rem]">
-              Real commute
-              <br />
-              routes, not
-              <br />
-              placeholder search.
-            </h1>
+            <motion.h1
+              variants={headlineContainer}
+              className="mt-4 text-5xl font-black uppercase leading-[0.92] tracking-tighter text-black md:text-7xl lg:text-[5.8rem]"
+            >
+              <motion.span variants={headlineLine} className="block">
+                Real commute
+              </motion.span>
+              <motion.span variants={headlineLine} className="block">
+                routes, not
+              </motion.span>
+              <motion.span variants={headlineLine} className="block">
+                placeholder search.
+              </motion.span>
+            </motion.h1>
 
-            <p className="mt-6 max-w-xl text-lg font-medium leading-relaxed text-black/70 md:text-xl">
+            <motion.p
+              variants={staggerChild}
+              className="mt-6 max-w-xl text-lg font-medium leading-relaxed text-black/70 md:text-xl"
+            >
               Browse published shared rides, see per-seat pricing upfront, and move into the live
               booking flow with your city already selected.
-            </p>
+            </motion.p>
 
-            <div className="panel mt-10 max-w-xl p-4 md:p-5">
+            <motion.div variants={staggerChild} className="panel mt-10 max-w-xl p-4 md:p-5">
               <div className="grid gap-3">
                 <label
                   htmlFor="hero-city"
@@ -166,64 +201,85 @@ const Hero = () => {
                   </div>
                 </label>
 
-                <div className="border-2 border-black bg-gray-100 px-4 py-4 shadow-soft">
-                  <p className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
-                    What opens next
-                  </p>
-                  <p className="mt-2 text-base font-black uppercase tracking-[0.08em] text-black">
-                    {preview.corridor}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-black/60">
-                    Live rides, seat availability, and clearer fare visibility for repeated city
-                    movement.
-                  </p>
-                </div>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={selectedCity}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+                    className="border-2 border-black bg-gray-100 px-4 py-4 shadow-soft"
+                  >
+                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
+                      What opens next
+                    </p>
+                    <p className="mt-2 text-base font-black uppercase tracking-[0.08em] text-black">
+                      {preview.corridor}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-black/60">
+                      Live rides, seat availability, and clearer fare visibility for repeated city
+                      movement.
+                    </p>
+                  </motion.div>
+                </AnimatePresence>
               </div>
 
               <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                <ButtonLink
-                  to={`/book?city=${encodeURIComponent(selectedCity)}`}
-                  size="lg"
-                  className="group gap-2 sm:flex-1"
-                >
-                  Open {selectedCity} rides
-                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-                </ButtonLink>
-                <ButtonLink to="/driver-signup" variant="outline" size="lg" className="sm:flex-1">
+                <MagneticWrap strength={0.18} className="flex-1">
+                  <ButtonLink
+                    to={`/book?city=${encodeURIComponent(selectedCity)}`}
+                    size="lg"
+                    className="group w-full gap-2"
+                  >
+                    Open {selectedCity} rides
+                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                  </ButtonLink>
+                </MagneticWrap>
+                <ButtonLink to="/driver-signup" variant="outline" size="lg" className="flex-1">
                   Driver application
                 </ButtonLink>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                {supportedCities.map((city) => (
-                  <button
+                {supportedCities.map((city, idx) => (
+                  <motion.button
                     key={city}
                     type="button"
                     onClick={() => setSelectedCity(city)}
                     aria-pressed={selectedCity === city}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 + idx * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.96 }}
                     className={cn(
-                      "route-chip transition-shadow",
+                      "route-chip",
                       selectedCity === city
                         ? "bg-black text-white shadow-premium"
                         : "hover:shadow-premium",
                     )}
                   >
                     {city}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.8, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
             className="relative min-h-[420px] lg:min-h-[600px]"
           >
             <div className="absolute inset-[10%_0_4%_16%] hidden border-2 border-black/10 bg-white/50 lg:block" />
 
-            <div className="absolute left-0 top-8 hidden xl:block">
+            <motion.div
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute left-0 top-8 hidden xl:block"
+            >
               <div className="panel px-4 py-3">
                 <p className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
                   City-first inventory
@@ -232,9 +288,14 @@ const Hero = () => {
                   {preview.liveRides}
                 </p>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="absolute bottom-8 left-0 hidden xl:block">
+            <motion.div
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.72, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute bottom-8 left-0 hidden xl:block"
+            >
               <div className="panel-dark px-4 py-3">
                 <p className="text-[11px] font-black uppercase tracking-[0.24em] text-white/70">
                   Fare clarity
@@ -243,7 +304,7 @@ const Hero = () => {
                   {preview.fare} average seat
                 </p>
               </div>
-            </div>
+            </motion.div>
 
             <div className="relative ml-auto flex h-full w-full max-w-[540px] items-center lg:pt-10">
               <div className="relative w-full border-4 border-black bg-white p-6 shadow-premium md:p-8">
@@ -266,31 +327,40 @@ const Hero = () => {
                         {selectedCity} commute board
                       </h2>
                     </div>
-                    <span className="route-chip bg-white text-black shadow-soft">Live</span>
+                    <span className="route-chip border-black bg-white text-black shadow-soft">
+                      <BreathingDot label="Live" color="black" />
+                    </span>
                   </div>
 
                   <div className="mt-8 space-y-3">
-                    {preview.routes.map((route) => (
-                      <div
-                        key={`${route.from}-${route.to}`}
-                        className="border-2 border-black bg-white p-4 shadow-soft transition-shadow hover:shadow-premium"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <p className="text-sm font-black uppercase tracking-[0.12em] text-black">
-                              {route.from}
-                            </p>
-                            <p className="mt-1 text-sm text-black/50">to {route.to}</p>
+                    <AnimatePresence mode="wait">
+                      {preview.routes.map((route, idx) => (
+                        <motion.div
+                          key={`${route.from}-${route.to}`}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 10 }}
+                          transition={{ delay: idx * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                          whileHover={{ x: 2 }}
+                          className="border-2 border-black bg-white p-4 shadow-soft transition-shadow hover:shadow-premium"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="text-sm font-black uppercase tracking-[0.12em] text-black">
+                                {route.from}
+                              </p>
+                              <p className="mt-1 text-sm text-black/50">to {route.to}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-black uppercase tracking-[0.1em] text-black">
+                                {route.fare}
+                              </p>
+                              <p className="mt-1 text-sm text-black/50">{route.seats}</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm font-black uppercase tracking-[0.1em] text-black">
-                              {route.fare}
-                            </p>
-                            <p className="mt-1 text-sm text-black/50">{route.seats}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                   </div>
 
                   <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -322,7 +392,12 @@ const Hero = () => {
               </div>
             </div>
 
-            <div className="absolute right-0 top-0 hidden md:block">
+            <motion.div
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.66, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute right-0 top-0 hidden md:block"
+            >
               <div className="panel px-4 py-3">
                 <div className="flex items-center gap-3">
                   <Users size={16} className="text-black" />
@@ -336,7 +411,7 @@ const Hero = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </div>
