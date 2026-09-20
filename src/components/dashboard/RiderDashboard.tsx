@@ -12,6 +12,8 @@ import type { Booking, BookingReceipt, NotificationItem, Profile, SavedLocation,
 import { Button, ButtonLink } from "../ui/Button";
 import { BookingReceiptCard } from "./BookingReceiptCard";
 import { BookingTimelineCard } from "./BookingTimelineCard";
+import { LiveTrackingMap } from "../booking/LiveTrackingMap";
+import { supportedCities, type SupportedCity } from "../../lib/cities";
 
 interface RiderDashboardProps {
   profile: Profile | null;
@@ -281,7 +283,31 @@ export const RiderDashboard = ({ profile }: RiderDashboardProps) => {
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="grid gap-6">
           {activeBooking ? (
-            <BookingTimelineCard booking={activeBooking} title="Live trip tracker" />
+            <>
+              <BookingTimelineCard booking={activeBooking} title="Live trip tracker" />
+              <div className="panel p-6">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
+                      Live map
+                    </p>
+                    <h3 className="mt-2 text-2xl font-black uppercase tracking-tight text-black">
+                      Track your driver in real-time
+                    </h3>
+                  </div>
+                  <div className="flex h-12 w-12 items-center justify-center border-2 border-black bg-black text-white">
+                    <Compass size={18} />
+                  </div>
+                </div>
+                <div className="mt-5 h-[400px] rounded-none border-2 border-black overflow-hidden">
+                  <LiveTrackingMap
+                    city={activeBooking.city as SupportedCity}
+                    bookingId={activeBooking.id}
+                    showNearbyDrivers={false}
+                  />
+                </div>
+              </div>
+            </>
           ) : (
             <div className="panel p-6">
               <p className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">

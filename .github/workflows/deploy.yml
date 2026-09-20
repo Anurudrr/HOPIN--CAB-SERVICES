@@ -1,0 +1,168 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      skip_tests:
+        description: 'Skip tests (emergency deploy)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  validate:
+    name: Pre-deployment Validation
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_tests }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Validate
+        run: npm run validate
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-key
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          VITE_MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          VITE_APP_URL: ${{ secrets.APP_URL }}
+          VITE_ENABLE_POOLING: 'true'
+          VITE_ENABLE_CHAT: 'true'
+          VITE_ENABLE_PUSH: 'true'
+          VITE_ENABLE_TRACKING: 'true'
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ inputs.environment }}
+          path: dist
+          retention-days: 30
+
+  deploy-supabase:
+    name: Deploy Supabase (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    needs: build
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Link Project
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      - name: Push Migrations
+        run: supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      - name: Deploy Edge Functions
+        run: |
+          for func in driver-location nearby-drivers ride-pooling stripe-checkout stripe-webhook push-notifications send-push ai-support-chat send-sms verify-sms send-email; do
+            echo "Deploying $func..."
+            supabase functions deploy $func --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          done
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      - name: Set Secrets
+        run: |
+          supabase secrets set \
+            STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+            STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+            VAPID_PUBLIC_KEY="${{ secrets.VAPID_PUBLIC_KEY }}" \
+            VAPID_PRIVATE_KEY="${{ secrets.VAPID_PRIVATE_KEY }}" \
+            VAPID_SUBJECT="${{ secrets.VAPID_SUBJECT }}" \
+            MAPBOX_TOKEN="${{ secrets.MAPBOX_TOKEN }}" \
+            SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            TWILIO_ACCOUNT_SID="${{ secrets.TWILIO_ACCOUNT_SID }}" \
+            TWILIO_AUTH_TOKEN="${{ secrets.TWILIO_AUTH_TOKEN }}" \
+            TWILIO_PHONE_NUMBER="${{ secrets.TWILIO_PHONE_NUMBER }}" \
+            TWILIO_VERIFY_SID="${{ secrets.TWILIO_VERIFY_SID }}" \
+            RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}" \
+            SENDGRID_API_KEY="${{ secrets.SENDGRID_API_KEY }}" \
+            FROM_EMAIL="${{ secrets.FROM_EMAIL }}" \
+            FROM_NAME="${{ secrets.FROM_NAME }}" \
+            --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  deploy-vercel:
+    name: Deploy to Vercel (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    needs: [build, deploy-supabase]
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ inputs.environment }}
+          path: dist
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+      - name: Deploy to Vercel
+        run: |
+          if [ "${{ inputs.environment }}" = "production" ]; then
+            vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+          else
+            vercel deploy --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+          fi
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-vercel, deploy-supabase]
+    if: always()
+    steps:
+      - name: Deployment Status
+        run: |
+          STATUS="${{ needs.deploy-vercel.result }}"
+          if [ "$STATUS" = "success" ]; then
+            echo "✅ Deployment to ${{ inputs.environment }} successful!"
+          else
+            echo "❌ Deployment to ${{ inputs.environment }} failed!"
+            exit 1
+          fi
+      - name: Post to Slack (optional)
+        if: env.SLACK_WEBHOOK_URL != ''
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"🚀 HopIn deployed to ${{ inputs.environment }}: ${{ needs.deploy-vercel.result }}"}' \
+            $SLACK_WEBHOOK_URL
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

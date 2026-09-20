@@ -297,6 +297,38 @@ export interface Transaction {
   created_at: string;
 }
 
+export interface PaymentIntent {
+  id: string;
+  user_id: string;
+  booking_id: string | null;
+  stripe_payment_intent_id: string;
+  amount_cents: number;
+  currency: string;
+  status: "created" | "processing" | "succeeded" | "failed" | "canceled" | "refunded";
+  payment_method_id: string | null;
+  payment_method_type: string | null;
+  metadata: Record<string, unknown>;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+  succeeded_at: string | null;
+  refunded_at: string | null;
+}
+
+export interface ChatMessage {
+  id: string;
+  booking_id: string;
+  sender_id: string;
+  message: string;
+  message_type: "text" | "image" | "location" | "system";
+  metadata: Record<string, unknown>;
+  read_at: string | null;
+  created_at: string;
+  sender_name: string;
+  sender_avatar: string | null;
+  is_own: boolean;
+}
+
 export interface SavedLocation {
   id: string;
   user_id: string;
@@ -354,6 +386,27 @@ export interface AdminDashboardData {
   notifications: NotificationItem[];
 }
 
+export interface DriverLocation {
+  id: string;
+  driver_id: string;
+  ride_id: string | null;
+  lat: number;
+  lng: number;
+  heading: number | null;
+  speed_kmh: number | null;
+  accuracy_meters: number | null;
+  is_online: boolean;
+  created_at: string;
+  updated_at: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
+  vehicle_make?: string | null;
+  vehicle_model?: string | null;
+  vehicle_color?: string | null;
+  vehicle_plate?: string | null;
+  distance_km?: number;
+}
+
 export interface RideInput {
   service_id?: string | null;
   origin_name: string;
@@ -366,4 +419,27 @@ export interface RideInput {
   departure_time: string;
   seats_total: number;
   fare_per_seat: number;
+}
+
+export interface RideRequest {
+  id: string;
+  rider_id: string;
+  city: string;
+  pickup_address: string;
+  pickup_lat: number;
+  pickup_lng: number;
+  dest_address: string;
+  dest_lat: number;
+  dest_lng: number;
+  service_id: string | null;
+  seats_requested: number;
+  max_fare_per_seat: number | null;
+  max_wait_minutes: number;
+  preferred_departure: string;
+  latest_departure: string;
+  status: "searching" | "matched" | "confirmed" | "expired" | "cancelled";
+  matched_ride_id: string | null;
+  matched_at: string | null;
+  created_at: string;
+  expires_at: string;
 }

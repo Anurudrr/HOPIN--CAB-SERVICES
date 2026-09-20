@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/react';
 
 import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { QueryProvider } from './providers/QueryProvider';
 import env from './lib/env';
 import './index.css';
 
@@ -14,6 +15,7 @@ if (env.SENTRY_DSN) {
     integrations: [Sentry.browserTracingIntegration()],
     tracesSampleRate: 0.2,
     environment: import.meta.env.MODE,
+    enableTracing: true,
   });
 }
 
@@ -31,7 +33,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <MotionConfig reducedMotion="user">
       <ErrorBoundary>
-        <App />
+        <QueryProvider>
+          <App />
+        </QueryProvider>
       </ErrorBoundary>
     </MotionConfig>
   </StrictMode>,

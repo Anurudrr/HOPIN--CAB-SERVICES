@@ -22,6 +22,7 @@ import {
   getServiceCatalog,
   updateBookingStatusByProvider,
   upsertProviderProfile,
+  updateDriverLocation,
 } from "../../lib/platformApi";
 import { supportedCities, type SupportedCity } from "../../lib/cities";
 import { providerProfileSchema, rideSchema, type ProviderProfileInput, type RideInput as RideFormInput } from "../../lib/validation";
@@ -96,6 +97,8 @@ export const DriverDashboard = () => {
   const [syncingProvider, setSyncingProvider] = React.useState(false);
   const [actingBookingId, setActingBookingId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [trackingActive, setTrackingActive] = React.useState(false);
+  const [currentRideId, setCurrentRideId] = React.useState<string | null>(null);
 
   const {
     register: registerProvider,
@@ -260,6 +263,79 @@ export const DriverDashboard = () => {
       void supabase.removeChannel(channel);
     };
   }, [hydrateDashboard, profile?.id]);
+
+  React.useEffect(() => {
+    const activeBooking = bookings.find((b) =>
+      ["accepted", "arriving", "ongoing", "in_progress", "confirmed"].includes(b.status)
+    );
+
+    if (activeBooking && !trackingActive) {
+      setTrackingActive(true);
+      setCurrentRideId(activeBooking.ride_id ?? activeBooking.id);
+      startLocationTracking(activeBooking.ride_id ?? activeBooking.id);
+    } else if (!activeBooking && trackingActive) {
+      setTrackingActive(false);
+      setCurrentRideId(null);
+      stopLocationTracking();
+    }
+  }, [bookings, trackingActive]);
+
+  let trackingInterval: ReturnType<typeof setInterval> | null = null;
+
+  const startLocationTracking = (rideId: string) => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation not supported");
+      return;
+    }
+
+    const updateLocation = async () => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            await updateDriverLocation({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              heading: position.coords.heading ?? undefined,
+              speed_kmh: position.coords.speed ? position.coords.speed * 3.6 : undefined,
+              accuracy_meters: position.coords.accuracy ?? undefined,
+              ride_id: rideId,
+              is_online: true,
+            });
+          } catch (error) {
+            console.error("Failed to update driver location:", error);
+          }
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+      );
+    };
+
+    updateLocation();
+    trackingInterval = setInterval(updateLocation, 10000);
+  };
+
+  const stopLocationTracking = () => {
+    if (trackingInterval) {
+      clearInterval(trackingInterval);
+      trackingInterval = null;
+    }
+    updateDriverLocation({
+      lat: 0,
+      lng: 0,
+      ride_id: currentRideId ?? undefined,
+      is_online: false,
+    }).catch(console.error);
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (trackingInterval) {
+        clearInterval(trackingInterval);
+      }
+    };
+  }, []);
 
   const handleSaveProviderProfile = async (values: ProviderProfileInput) => {
     setSyncingProvider(true);

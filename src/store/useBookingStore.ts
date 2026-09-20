@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 import type { SupportedCity } from "../lib/cities";
-import { bookRide, cancelBooking } from "../lib/api";
+import { bookRide, cancelBooking, getAvailableRides } from "../lib/api";
 import type { BookingQuote } from "../lib/quote";
 import { toast } from "../lib/toast";
 import type { Booking, Ride } from "../types";
@@ -218,8 +218,19 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       return null;
     }
 
-    const seatCount = clampSeats(seats ?? 1, selectedRide.seats_available);
-    if (seatCount > selectedRide.seats_available) {
+    // Re-fetch ride to get fresh seat availability (race condition fix)
+    let freshRide: Ride | null = null;
+    try {
+      const rides = await getAvailableRides(selectedRide.city);
+      freshRide = rides.find(r => r.id === rideId) ?? null;
+    } catch {
+      // If fetch fails, fall back to selected ride but warn
+      freshRide = selectedRide;
+    }
+
+    const rideToBook = freshRide ?? selectedRide;
+    const seatCount = clampSeats(seats ?? 1, rideToBook.seats_available);
+    if (seatCount > rideToBook.seats_available) {
       const msg = "That ride no longer has enough seats available.";
       set({ bookingError: msg, isSearching: false, activeRide: null });
       toast.error(msg);
@@ -231,7 +242,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     try {
       const booking = await bookRide({
         rideId,
-        serviceId: selectedRide.service_id ?? get().currentRequest.serviceId ?? null,
+        serviceId: rideToBook.service_id ?? get().currentRequest.serviceId ?? null,
         seats: seatCount,
         pickup: {
           address: pickup.address,

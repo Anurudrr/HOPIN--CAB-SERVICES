@@ -1,4 +1,5 @@
 import { env } from "./env";
+import { supabase } from "./supabase";
 
 export interface PlaceSuggestion {
   id: string;
@@ -14,7 +15,7 @@ export interface RouteEstimate {
   geometry: Array<[number, number]>;
 }
 
-const mapboxToken = env.MAPBOX_ACCESS_TOKEN;
+const MAPBOX_PROXY_BASE = "/functions/v1/mapbox-proxy";
 
 function toPlaceSuggestion(feature: {
   id: string;
@@ -35,15 +36,35 @@ function toPlaceSuggestion(feature: {
   };
 }
 
+async function mapboxFetch(path: string, params: URLSearchParams) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (session?.access_token) {
+    headers["Authorization"] = `Bearer ${session.access_token}`;
+  }
+
+  const response = await fetch(`${MAPBOX_PROXY_BASE}${path}?${params.toString()}`, {
+    headers,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: "Request failed" }));
+    throw new Error(error.error || "Mapbox request failed");
+  }
+
+  return response.json();
+}
+
 export async function searchPlaces(query: string, proximity?: { lat: number; lng: number }) {
   const trimmedQuery = query.trim();
 
-  if (!mapboxToken || trimmedQuery.length < 3) {
+  if (trimmedQuery.length < 3) {
     return [] as PlaceSuggestion[];
   }
 
   const params = new URLSearchParams({
-    access_token: mapboxToken,
     autocomplete: "true",
     limit: "5",
     country: "IN",
@@ -54,15 +75,10 @@ export async function searchPlaces(query: string, proximity?: { lat: number; lng
     params.set("proximity", `${proximity.lng},${proximity.lat}`);
   }
 
-  const response = await fetch(
-    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(trimmedQuery)}.json?${params.toString()}`,
-  );
-
-  if (!response.ok) {
-    throw new Error("Could not search locations right now.");
-  }
-
-  const payload = (await response.json()) as {
+  const payload = await mapboxFetch(
+    `/geocoding/v5/mapbox.places/${encodeURIComponent(trimmedQuery)}.json`,
+    params
+  ) as {
     features?: Array<{
       id: string;
       place_name?: string;
@@ -77,27 +93,17 @@ export async function searchPlaces(query: string, proximity?: { lat: number; lng
 }
 
 export async function getRouteEstimate(origin: { lat: number; lng: number }, destination: { lat: number; lng: number }) {
-  if (!mapboxToken) {
-    throw new Error("Map services are not configured.");
-  }
-
   const coordinates = `${origin.lng},${origin.lat};${destination.lng},${destination.lat}`;
   const params = new URLSearchParams({
-    access_token: mapboxToken,
     geometries: "geojson",
     overview: "full",
     steps: "false",
   });
 
-  const response = await fetch(
-    `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?${params.toString()}`,
-  );
-
-  if (!response.ok) {
-    throw new Error("Could not load route details right now.");
-  }
-
-  const payload = (await response.json()) as {
+  const payload = await mapboxFetch(
+    `/directions/v5/mapbox/driving/${coordinates}`,
+    params
+  ) as {
     routes?: Array<{
       distance?: number;
       duration?: number;
@@ -121,6 +127,9 @@ export async function getRouteEstimate(origin: { lat: number; lng: number }, des
 }
 
 export function getMapboxTileUrl() {
+  // Tile URLs still need the token in the URL for Mapbox tiles
+  // This is acceptable as it's a public token with URL restrictions
+  const mapboxToken = env.MAPBOX_ACCESS_TOKEN;
   if (!mapboxToken) {
     return null;
   }

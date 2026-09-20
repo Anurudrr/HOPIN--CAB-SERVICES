@@ -12,6 +12,7 @@ import {
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { PlaceAutocompleteInput } from "../components/booking/PlaceAutocompleteInput";
+import { PoolSearch } from "../components/booking/PoolSearch";
 import { LazyMap } from "../components/LazyMap";
 import { Button, ButtonLink } from "../components/ui/Button";
 import { supportedCities, type SupportedCity } from "../lib/cities";
@@ -21,6 +22,7 @@ import { getRouteEstimate } from "../lib/mapbox";
 import { getSavedLocations, getServiceCatalog } from "../lib/platformApi";
 import { calculateBookingQuote, buildFallbackRouteEstimate } from "../lib/quote";
 import { buildRideShareUrl, getRequestedRideId } from "../lib/rideShare";
+import { createStripeCheckoutSession } from "../lib/platformApi";
 import { toast } from "../lib/toast";
 import { cn } from "../lib/utils";
 import { useBookingStore, type Location } from "../store/useBookingStore";
@@ -64,6 +66,7 @@ export default function Booking() {
   const [searchFilter, setSearchFilter] = React.useState("");
   const [departureFilter, setDepartureFilter] = React.useState<"today" | "week" | "all">("all");
   const [sortBy, setSortBy] = React.useState<"earliest" | "lowest-fare" | "most-seats">("earliest");
+  const [bookingMode, setBookingMode] = React.useState<"direct" | "pool">("direct");
   const [rides, setRides] = React.useState<Ride[]>([]);
   const [services, setServices] = React.useState<Service[]>([]);
   const [savedLocations, setSavedLocations] = React.useState<SavedLocation[]>([]);
@@ -307,6 +310,24 @@ export default function Booking() {
     const booking = await startSearch();
 
     if (booking) {
+      const amountCents = Math.round((booking.fare_total ?? 0) * 100);
+      if (amountCents > 0) {
+        try {
+          const session = await createStripeCheckoutSession({
+            booking_id: booking.id,
+            amount_cents: amountCents,
+            currency: "inr",
+            success_url: `${window.location.origin}/dashboard?payment=success&booking=${booking.id}`,
+            cancel_url: `${window.location.origin}/dashboard?payment=cancelled&booking=${booking.id}`,
+          });
+          if (session.url) {
+            window.location.href = session.url;
+            return;
+          }
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : "Payment setup failed");
+        }
+      }
       navigate("/dashboard");
     }
   };
@@ -478,8 +499,36 @@ export default function Booking() {
               </div>
             </div>
 
-            <div className="grid gap-4">
-              <div className="grid gap-4 rounded-none border-2 border-black bg-gray-100 p-5 md:grid-cols-3">
+            <div className="flex gap-2 border-2 border-black rounded-none overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setBookingMode("direct")}
+                className={cn(
+                  "px-4 py-3 text-sm font-black uppercase tracking-[0.14em] transition-colors",
+                  bookingMode === "direct"
+                    ? "bg-black text-white"
+                    : "bg-white text-black hover:bg-gray-100",
+                )}
+              >
+                Direct Booking
+              </button>
+              <button
+                type="button"
+                onClick={() => setBookingMode("pool")}
+                className={cn(
+                  "px-4 py-3 text-sm font-black uppercase tracking-[0.14em] transition-colors",
+                  bookingMode === "pool"
+                    ? "bg-black text-white"
+                    : "bg-white text-black hover:bg-gray-100",
+                )}
+              >
+                Pool Search (Save up to 40%)
+              </button>
+            </div>
+
+            {bookingMode === "direct" ? (
+              <div className="grid gap-4">
+                <div className="grid gap-4 rounded-none border-2 border-black bg-gray-100 p-5 md:grid-cols-3">
                 <div className="space-y-2 md:col-span-1">
                   <label className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
                     Search route
@@ -827,6 +876,18 @@ export default function Booking() {
               </div>
             </div>
           </aside>
+
+          {bookingMode === "pool" ? (
+            <aside className="panel flex flex-col gap-8 p-6 md:p-8">
+              <PoolSearch
+                city={selectedCity}
+                onPickupSelect={setPickup}
+                onDestSelect={setDestination}
+                currentPickup={currentRequest.pickup}
+                currentDest={currentRequest.destination}
+              />
+            </aside>
+          ) : null}
 
           <section className="panel relative min-h-[680px] overflow-hidden p-3">
             <div className="grid gap-3 px-3 pb-3 md:hidden">

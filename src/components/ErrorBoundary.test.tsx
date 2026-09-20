@@ -59,28 +59,22 @@ describe("ErrorBoundary", () => {
       throw new Error("Kaboom");
     };
 
-    const handleReloadSpy = vi.spyOn(ErrorBoundary.prototype, "handleReload");
-    const handleReloadPageSpy = vi.spyOn(ErrorBoundary.prototype, "handleReloadPage");
+    const handleReset = vi.fn();
 
     await act(async () => {
       root.render(
-        <ErrorBoundary>
+        <ErrorBoundary onReset={handleReset}>
           <Thrower />
         </ErrorBoundary>,
       );
     });
 
-    const [reloadPageButton, goHomeButton] = Array.from(container.querySelectorAll("button"));
+    const [tryAgainButton] = Array.from(container.querySelectorAll("button"));
 
     await act(async () => {
-      reloadPageButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      goHomeButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      tryAgainButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(handleReloadPageSpy).toHaveBeenCalledTimes(1);
-    expect(handleReloadSpy).toHaveBeenCalledTimes(1);
-
-    handleReloadSpy.mockRestore();
-    handleReloadPageSpy.mockRestore();
+    expect(handleReset).toHaveBeenCalledTimes(1);
   });
 });
