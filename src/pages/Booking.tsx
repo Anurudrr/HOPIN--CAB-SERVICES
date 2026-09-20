@@ -526,68 +526,189 @@ export default function Booking() {
               </button>
             </div>
 
-            {bookingMode === "direct" ? (
-              <div className="grid gap-4">
-                <div className="grid gap-4 rounded-none border-2 border-black bg-gray-100 p-5 md:grid-cols-3">
-                <div className="space-y-2 md:col-span-1">
-                  <label className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
-                    Search route
-                  </label>
-                  <input
-                    value={searchFilter}
-                    onChange={(event) => setSearchFilter(event.target.value)}
-                    className="field-shell"
-                    placeholder="Origin or destination"
-                  />
+{bookingMode === "direct" ? (
+                <div className="grid gap-4">
+                  <div className="grid gap-4 rounded-none border-2 border-black bg-gray-100 p-5 md:grid-cols-3">
+                  <div className="space-y-2 md:col-span-1">
+                    <label className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
+                      Search route
+                    </label>
+                    <input
+                      value={searchFilter}
+                      onChange={(event) => setSearchFilter(event.target.value)}
+                      className="field-shell"
+                      placeholder="Origin or destination"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
+                      Departure window
+                    </label>
+                    <select
+                      value={departureFilter}
+                      onChange={(event) => setDepartureFilter(event.target.value as "today" | "week" | "all")}
+                      className="field-shell"
+                    >
+                      <option value="today">Today</option>
+                      <option value="week">This week</option>
+                      <option value="all">All departures</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
+                      Sort rides
+                    </label>
+                    <select
+                      value={sortBy}
+                      onChange={(event) =>
+                        setSortBy(event.target.value as "earliest" | "lowest-fare" | "most-seats")
+                      }
+                      className="field-shell"
+                    >
+                      <option value="earliest">Earliest departure</option>
+                      <option value="lowest-fare">Lowest fare</option>
+                      <option value="most-seats">Most seats</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
-                    Departure window
-                  </label>
-                  <select
-                    value={departureFilter}
-                    onChange={(event) => setDepartureFilter(event.target.value as "today" | "week" | "all")}
-                    className="field-shell"
-                  >
-                    <option value="today">Today</option>
-                    <option value="week">This week</option>
-                    <option value="all">All departures</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
-                    Sort rides
-                  </label>
-                  <select
-                    value={sortBy}
-                    onChange={(event) =>
-                      setSortBy(event.target.value as "earliest" | "lowest-fare" | "most-seats")
-                    }
-                    className="field-shell"
-                  >
-                    <option value="earliest">Earliest departure</option>
-                    <option value="lowest-fare">Lowest fare</option>
-                    <option value="most-seats">Most seats</option>
-                  </select>
-                </div>
-              </div>
 
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
-                  Live routes
-                </p>
-                <div className="mt-3 grid gap-3">
-                  {loadingRides ? (
-                    <div className="rounded-none border-2 border-black bg-gray-100 p-5 text-sm text-black/60">
-                      Loading live services for {selectedCity}.
-                    </div>
-                  ) : filteredRides.length ? (
-                    filteredRides.map((ride) => {
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
+                    Live routes
+                  </p>
+                  <div className="mt-3 grid gap-3">
+                    {loadingRides ? (
+                      <div className="rounded-none border-2 border-black bg-gray-100 p-5 text-sm text-black/60">
+                        Loading live services for {selectedCity}.
+                      </div>
+                    ) : filteredRides.length ? (
+                      filteredRides.map((ride) => {
                       const isSelected = selectedRide?.id === ride.id;
                       const rideService =
                         services.find((service) => service.id === ride.service_id) ?? selectedService;
 
-                      return (
+};
+
+  const directModeContent = bookingMode === "direct" ? (
+    <div className="grid gap-4">
+      <div className="grid gap-4 rounded-none border-2 border-black bg-gray-100 p-5 md:grid-cols-3">
+        <div className="space-y-2 md:col-span-1">
+          <label className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
+            Search route
+          </label>
+          <input
+            value={searchFilter}
+            onChange={(event) => setSearchFilter(event.target.value)}
+            className="field-shell"
+            placeholder="Origin or destination"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
+            Departure window
+          </label>
+          <select
+            value={departureFilter}
+            onChange={(event) => setDepartureFilter(event.target.value as "today" | "week" | "all")}
+            className="field-shell"
+          >
+            <option value="today">Today</option>
+            <option value="week">This week</option>
+            <option value="all">All departures</option>
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
+            Sort rides
+          </label>
+          <select
+            value={sortBy}
+            onChange={(event) =>
+              setSortBy(event.target.value as "earliest" | "lowest-fare" | "most-seats")
+            }
+            className="field-shell"
+          >
+            <option value="earliest">Earliest departure</option>
+            <option value="lowest-fare">Lowest fare</option>
+            <option value="most-seats">Most seats</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-[11px] font-black uppercase tracking-[0.24em] text-black/60">
+          Live routes
+        </p>
+        <div className="mt-3 grid gap-3">
+          {loadingRides ? (
+            <div className="rounded-none border-2 border-black bg-gray-100 p-5 text-sm text-black/60">
+              Loading live services for {selectedCity}.
+            </div>
+          ) : filteredRides.length ? (
+            filteredRides.map((ride) => {
+              const isSelected = selectedRide?.id === ride.id;
+              const rideService =
+                services.find((service) => service.id === ride.service_id) ?? selectedService;
+
+              return (
+                <article
+                  key={ride.id}
+                  className={cn(
+                    "rounded-none border-2 p-5 transition-colors shadow-soft",
+                    isSelected
+                      ? "border-black bg-white shadow-premium"
+                      : "border-black bg-gray-100 hover:border-black",
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleRideSelect(ride)}
+                    className="w-full text-left"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-black">
+                          {ride.origin_name} to {ride.destination_name}
+                        </p>
+                        <p className="mt-2 text-sm text-black/60">
+                          {new Date(ride.departure_time).toLocaleString()}
+                        </p>
+                        <p className="mt-2 text-sm text-black/60">
+                          {rideService?.name || "Live service"} / {ride.driver?.full_name || "HopIn provider"}
+                        </p>
+                      </div>
+                      <div className="text-right text-sm text-black/60">
+                        <p>{formatCurrency(ride.fare_per_seat)} / seat</p>
+                        <p className="mt-2">{ride.seats_available} seats open</p>
+                      </div>
+                    </div>
+                  </button>
+                  <div className="mt-4 flex justify-between gap-3">
+                    <span className="route-chip">{rideService?.accent_label || ride.city}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => void handleShareRide(ride)}
+                    >
+                      <Share2 size={16} />
+                      Share
+                    </Button>
+                  </div>
+                </article>
+              );
+            })
+          ) : (
+            <div className="rounded-none border-2 border-black bg-gray-100 p-5 text-sm text-black/60">
+              No live services are currently published in {selectedCity} for this category.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  return (
                         <article
                           key={ride.id}
                           className={cn(
@@ -641,7 +762,8 @@ export default function Booking() {
                     </div>
                   )}
                 </div>
-              </div>
+                </div>
+              ) : null}
 
               {selectedRide ? (
                 <div className="rounded-none border-2 border-black bg-gray-100 p-5">
