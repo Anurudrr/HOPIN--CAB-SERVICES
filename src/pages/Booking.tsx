@@ -758,7 +758,6 @@ export default function Booking() {
                   />
                 </div>
               </div>
-            </div>
 
             <div className="grid gap-4">
               <div className="rounded-none border-2 border-black bg-gray-100 p-5">
@@ -879,7 +878,8 @@ export default function Booking() {
             </div>
           </aside>
 
-          {bookingMode === "pool" ? (
+          <div className="min-w-0">
+            {bookingMode === "pool" ? (
             <aside className="panel flex flex-col gap-8 p-6 md:p-8">
               <PoolSearch
                 city={selectedCity}
@@ -980,6 +980,7 @@ export default function Booking() {
               <LazyMap city={selectedCity} routeGeometry={routeGeometry} />
             </div>
           </section>
+          </div>
         </div>
       </div>
     </div>

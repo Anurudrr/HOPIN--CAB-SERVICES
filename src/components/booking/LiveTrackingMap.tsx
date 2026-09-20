@@ -151,26 +151,29 @@ export const LiveTrackingMap = ({
 
     loadInitialLocation();
 
-    if (bookingId) {
-      const { data: booking } = await supabase
-        .from("bookings")
-        .select("driver_id, status")
-        .eq("id", bookingId)
-        .single();
+    const loadBooking = async () => {
+      if (bookingId) {
+        const { data: booking } = await supabase
+          .from("bookings")
+          .select("driver_id, status")
+          .eq("id", bookingId)
+          .single();
 
-      if (booking?.driver_id && ["accepted", "arriving", "ongoing", "in_progress", "confirmed"].includes(booking.status)) {
-        const unsubscribe = subscribeToDriverLocation(booking.driver_id, (location) => {
-          if (mounted) {
-            setDriverLocation(location);
-          }
-        });
+        if (booking?.driver_id && ["accepted", "arriving", "ongoing", "in_progress", "confirmed"].includes(booking.status)) {
+          const unsubscribe = subscribeToDriverLocation(booking.driver_id, (location) => {
+            if (mounted) {
+              setDriverLocation(location);
+            }
+          });
 
-        return () => {
-          mounted = false;
-          unsubscribe();
-        };
+          return () => {
+            mounted = false;
+            unsubscribe();
+          };
+        }
       }
-    }
+    };
+    loadBooking();
 
     return () => {
       mounted = false;
@@ -280,9 +283,11 @@ export const LiveTrackingMap = ({
                 Heading: {Math.round(driverLocation.heading)}° · {Math.round(driverLocation.speed_kmh)} km/h
               </>
             )}
-            {driverLocation?.accuracy_meters && (
-              <br />Accuracy: ±{Math.round(driverLocation.accuracy_meters)}m
-            )}
+{driverLocation?.accuracy_meters && (
+                <>
+                  <br />Accuracy: ±{Math.round(driverLocation.accuracy_meters)}m
+                </>
+              )}
             <br />
             Updated: {new Date(driverLocation.updated_at).toLocaleTimeString()}
           </Popup>
@@ -298,7 +303,11 @@ export const LiveTrackingMap = ({
           <Popup>
             🚗 {driver.full_name || "Available driver"}
             {driver.vehicle_make && ` · ${driver.vehicle_color} ${driver.vehicle_make} ${driver.vehicle_model}`}
-            {driver.distance_km !== undefined && <br />{driver.distance_km.toFixed(1)} km away}
+            {driver.distance_km !== undefined && (
+                <>
+                  <br />{driver.distance_km.toFixed(1)} km away
+                </>
+              )}
             <br />
             Updated: {new Date(driver.updated_at).toLocaleTimeString()}
           </Popup>
@@ -315,5 +324,3 @@ export const LiveTrackingMap = ({
     </MapContainer>
   );
 };
-
-export { LiveTrackingMap };
