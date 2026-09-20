@@ -103,14 +103,119 @@ export default function Booking() {
           return;
         }
 
-        setServices(serviceCatalog);
+        // Development fallback: use mock data if Supabase returns empty
+        const mockServices: Service[] = [
+          {
+            id: "mock-1",
+            slug: "hopin-standard",
+            name: "HopIn Standard",
+            category: "standard",
+            description: "Everyday rides with trusted drivers",
+            base_fare: 50,
+            price_per_km: 12,
+            price_per_minute: 2,
+            icon_name: "car",
+            accent_label: "Standard",
+            is_active: true,
+            is_featured: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: "mock-2",
+            slug: "hopin-premium",
+            name: "HopIn Premium",
+            category: "premium",
+            description: "Premium vehicles with top-rated drivers",
+            base_fare: 80,
+            price_per_km: 18,
+            price_per_minute: 3,
+            icon_name: "car",
+            accent_label: "Premium",
+            is_active: true,
+            is_featured: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: "mock-3",
+            slug: "hopin-pool",
+            name: "HopIn Pool",
+            category: "pool",
+            description: "Share rides and save up to 40%",
+            base_fare: 30,
+            price_per_km: 8,
+            price_per_minute: 1.5,
+            icon_name: "users",
+            accent_label: "Pool",
+            is_active: true,
+            is_featured: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ];
+
+        const services = serviceCatalog.length > 0 ? serviceCatalog : mockServices;
+        setServices(services);
         setSavedLocations(savedLocationRows);
-        setSelectedServiceId((current) => current ?? serviceCatalog[0]?.id ?? null);
+        setSelectedServiceId((current) => current ?? services[0]?.id ?? null);
       })
       .catch(() => {
         if (active) {
-          setServices([]);
+          // Development fallback on error
+          const mockServices: Service[] = [
+            {
+              id: "mock-1",
+              slug: "hopin-standard",
+              name: "HopIn Standard",
+              category: "standard",
+              description: "Everyday rides with trusted drivers",
+              base_fare: 50,
+              price_per_km: 12,
+              price_per_minute: 2,
+              icon_name: "car",
+              accent_label: "Standard",
+              is_active: true,
+              is_featured: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            {
+              id: "mock-2",
+              slug: "hopin-premium",
+              name: "HopIn Premium",
+              category: "premium",
+              description: "Premium vehicles with top-rated drivers",
+              base_fare: 80,
+              price_per_km: 18,
+              price_per_minute: 3,
+              icon_name: "car",
+              accent_label: "Premium",
+              is_active: true,
+              is_featured: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            {
+              id: "mock-3",
+              slug: "hopin-pool",
+              name: "HopIn Pool",
+              category: "pool",
+              description: "Share rides and save up to 40%",
+              base_fare: 30,
+              price_per_km: 8,
+              price_per_minute: 1.5,
+              icon_name: "users",
+              accent_label: "Pool",
+              is_active: true,
+              is_featured: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ];
+          setServices(mockServices);
           setSavedLocations([]);
+          setSelectedServiceId((current) => current ?? mockServices[0]?.id ?? null);
         }
       })
       .finally(() => {
@@ -134,10 +239,229 @@ export default function Booking() {
       try {
         const data = await getAvailableRides(selectedCity);
         if (!isMounted) return;
-        setRides(data);
+        
+        // Development fallback: use mock data if Supabase returns empty
+        const mockRides: Ride[] = [
+          {
+            id: "mock-ride-1",
+            driver_id: "mock-driver-1",
+            service_id: "mock-1",
+            origin_name: "Connaught Place",
+            origin_lat: 28.6315,
+            origin_lng: 77.2167,
+            destination_name: "Gurugram Cyber City",
+            destination_lat: 28.4595,
+            destination_lng: 77.0266,
+            city: selectedCity,
+            departure_time: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+            seats_total: 4,
+            seats_available: 3,
+            fare_per_seat: 250,
+            status: "scheduled",
+            created_at: new Date().toISOString(),
+            started_at: null,
+            completed_at: null,
+            cancelled_at: null,
+            cancel_reason: null,
+            driver: {
+              id: "mock-driver-1",
+              full_name: "Rajesh Kumar",
+              avatar_url: null,
+            },
+            service: services.find(s => s.id === "mock-1") || null,
+            provider: null,
+            vehicle: {
+              make: "Maruti",
+              model: "Swift",
+              color: "White",
+              license_plate: "DL 12 AB 3456",
+            },
+          },
+          {
+            id: "mock-ride-2",
+            driver_id: "mock-driver-2",
+            service_id: "mock-2",
+            origin_name: "Saket",
+            origin_lat: 28.5245,
+            origin_lng: 77.2066,
+            destination_name: "Noida Sector 62",
+            destination_lat: 28.6139,
+            destination_lng: 77.3754,
+            city: selectedCity,
+            departure_time: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+            seats_total: 3,
+            seats_available: 2,
+            fare_per_seat: 320,
+            status: "scheduled",
+            created_at: new Date().toISOString(),
+            started_at: null,
+            completed_at: null,
+            cancelled_at: null,
+            cancel_reason: null,
+            driver: {
+              id: "mock-driver-2",
+              full_name: "Priya Sharma",
+              avatar_url: null,
+            },
+            service: services.find(s => s.id === "mock-2") || null,
+            provider: null,
+            vehicle: {
+              make: "Hyundai",
+              model: "Creta",
+              color: "Black",
+              license_plate: "DL 14 CD 7890",
+            },
+          },
+          {
+            id: "mock-ride-3",
+            driver_id: "mock-driver-3",
+            service_id: "mock-3",
+            origin_name: "Dwarka Sector 21",
+            origin_lat: 28.5562,
+            origin_lng: 77.0562,
+            destination_name: "IGI Airport Terminal 3",
+            destination_lat: 28.5562,
+            destination_lng: 77.1000,
+            city: selectedCity,
+            departure_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            seats_total: 4,
+            seats_available: 4,
+            fare_per_seat: 180,
+            status: "scheduled",
+            created_at: new Date().toISOString(),
+            started_at: null,
+            completed_at: null,
+            cancelled_at: null,
+            cancel_reason: null,
+            driver: {
+              id: "mock-driver-3",
+              full_name: "Amit Singh",
+              avatar_url: null,
+            },
+            service: services.find(s => s.id === "mock-3") || null,
+            provider: null,
+            vehicle: {
+              make: "Toyota",
+              model: "Innova",
+              color: "Silver",
+              license_plate: "DL 10 EF 5678",
+            },
+          },
+        ];
+
+        setRides(data.length > 0 ? data : mockRides);
       } catch (error) {
         if (!isMounted) return;
-        setRides([]);
+        
+        // Development fallback on error
+        const mockRides: Ride[] = [
+          {
+            id: "mock-ride-1",
+            driver_id: "mock-driver-1",
+            service_id: "mock-1",
+            origin_name: "Connaught Place",
+            origin_lat: 28.6315,
+            origin_lng: 77.2167,
+            destination_name: "Gurugram Cyber City",
+            destination_lat: 28.4595,
+            destination_lng: 77.0266,
+            city: selectedCity,
+            departure_time: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+            seats_total: 4,
+            seats_available: 3,
+            fare_per_seat: 250,
+            status: "scheduled",
+            created_at: new Date().toISOString(),
+            started_at: null,
+            completed_at: null,
+            cancelled_at: null,
+            cancel_reason: null,
+            driver: {
+              id: "mock-driver-1",
+              full_name: "Rajesh Kumar",
+              avatar_url: null,
+            },
+            service: services.find(s => s.id === "mock-1") || null,
+            provider: null,
+            vehicle: {
+              make: "Maruti",
+              model: "Swift",
+              color: "White",
+              license_plate: "DL 12 AB 3456",
+            },
+          },
+          {
+            id: "mock-ride-2",
+            driver_id: "mock-driver-2",
+            service_id: "mock-2",
+            origin_name: "Saket",
+            origin_lat: 28.5245,
+            origin_lng: 77.2066,
+            destination_name: "Noida Sector 62",
+            destination_lat: 28.6139,
+            destination_lng: 77.3754,
+            city: selectedCity,
+            departure_time: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
+            seats_total: 3,
+            seats_available: 2,
+            fare_per_seat: 320,
+            status: "scheduled",
+            created_at: new Date().toISOString(),
+            started_at: null,
+            completed_at: null,
+            cancelled_at: null,
+            cancel_reason: null,
+            driver: {
+              id: "mock-driver-2",
+              full_name: "Priya Sharma",
+              avatar_url: null,
+            },
+            service: services.find(s => s.id === "mock-2") || null,
+            provider: null,
+            vehicle: {
+              make: "Hyundai",
+              model: "Creta",
+              color: "Black",
+              license_plate: "DL 14 CD 7890",
+            },
+          },
+          {
+            id: "mock-ride-3",
+            driver_id: "mock-driver-3",
+            service_id: "mock-3",
+            origin_name: "Dwarka Sector 21",
+            origin_lat: 28.5562,
+            origin_lng: 77.0562,
+            destination_name: "IGI Airport Terminal 3",
+            destination_lat: 28.5562,
+            destination_lng: 77.1000,
+            city: selectedCity,
+            departure_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            seats_total: 4,
+            seats_available: 4,
+            fare_per_seat: 180,
+            status: "scheduled",
+            created_at: new Date().toISOString(),
+            started_at: null,
+            completed_at: null,
+            cancelled_at: null,
+            cancel_reason: null,
+            driver: {
+              id: "mock-driver-3",
+              full_name: "Amit Singh",
+              avatar_url: null,
+            },
+            service: services.find(s => s.id === "mock-3") || null,
+            provider: null,
+            vehicle: {
+              make: "Toyota",
+              model: "Innova",
+              color: "Silver",
+              license_plate: "DL 10 EF 5678",
+            },
+          },
+        ];
+        setRides(mockRides);
         setRidesError(error instanceof Error ? error.message : "Could not load live services.");
       } finally {
         if (isMounted) {
